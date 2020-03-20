@@ -34,7 +34,7 @@
             });
         });
         images.forEach(function (image) {
-            var imageElm = paletteImgFromEntry(image.entry, palette);
+            var imageElm = image.entry.unk4 == 5 ? paletteXImgFromEntry(image.entry, palette) : paletteImgFromEntry(image.entry, palette);
             imageElm.title = image.groupID + "-" + image.entryID;
             listElm.appendChild(imageElm);
         });
