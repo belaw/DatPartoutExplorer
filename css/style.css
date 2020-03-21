@@ -16,19 +16,16 @@ body {
 	padding: 5px;
 }
 
-/*noinspection CssUnusedSymbol*/
 .col {
 	display: inline-block;
 }
 
-/*noinspection CssUnusedSymbol*/
 .colorSquare {
 	width: 5px;
 	height: 5px;
 	margin: 0;
 }
 
-/*noinspection CssUnusedSymbol*/
 .squareGroup {
 	display: inline-block;
 }
