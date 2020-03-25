@@ -1,0 +1,30 @@
+{
+  "name": "datpartout",
+  "version": "1.0.0",
+  "description": "Parses the PARTOUT(4.0)RESOURCE file format used by Maxis/Cinematronics in Full Tilt Pinball and displays the contents.",
+  "main": "index.js",
+  "directories": {
+    "lib": "lib"
+  },
+  "dependencies": {
+    "three": "^0.115.0"
+  },
+  "devDependencies": {
+    "webpack": "^4.42.1",
+    "webpack-cli": "^3.3.11"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "webpack"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/belaw/DatPartoutExplorer.git"
+  },
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/belaw/DatPartoutExplorer/issues"
+  },
+  "homepage": "https://github.com/belaw/DatPartoutExplorer#readme"
+}
