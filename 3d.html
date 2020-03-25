@@ -38,77 +38,112 @@
     <input type="number" id="centerY" min="0" max="1" step="0.1" value="0.5"><br>
 
     <label for="minZ">Min. Z</label>
-    <input type="number" id="minZ" step="0.01" value="0"><br>
+    <input type="number" id="minZ" step="0.01" value="0.5"><br>
 
     <label for="maxZ">Max. Z</label>
     <input type="number" id="maxZ" step="0.01" value="1"><br>
 
-    <button id="dl">File</button>
+    <label for="pSize">Point Size</label>
+    <input type="number" id="pSize" step="0.01" value="1"><br>
 
+    <label for="pSize">Size Attentuation</label>
+    <input type="checkbox" id="sizeAttentuation" checked><br>
+
+    <label for="ortho">Orthographic Camera</label>
+    <input type="checkbox" id="ortho"><br>
+
+    <button id="dl">File</button><br>
     <button id="camReset">Reset Camera</button>
 </div>
 <script src="lib/DATPARTOUT.js"></script>
+<script src="dist/bundle.js"></script>
 <script type="module">
     import * as THREE from "./lib/three.module.js";
     import {OrbitControls} from "./lib/OrbitControls.js";
 
     function init() {
-        const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 10000);
+        const SCREEN_WIDTH = window.innerWidth;
+        const SCREEN_HEIGHT = window.innerHeight;
+        const aspect = SCREEN_WIDTH / SCREEN_HEIGHT;
+        const frustumSize = 600;
 
-        scene.background = new THREE.Color(0.2, 0.2, 0);
+        const scene = new THREE.Scene();
+        const cameraX = new THREE.PerspectiveCamera(75, 583 / 751, 0.1, 100);
+        const cameraXHelper = new THREE.CameraHelper(cameraX);
+        const cameraP = new THREE.PerspectiveCamera(75, aspect, 0.1, 2000);
+        const cameraO = new THREE.OrthographicCamera(frustumSize * aspect / - 2, frustumSize * aspect / 2, frustumSize / 2, frustumSize / - 2, 0.1, 2000);
+
+        scene.background = new THREE.Color(0.2, 0.1, 0);
 
         const renderer = new THREE.WebGLRenderer();
-        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setSize(SCREEN_WIDTH, SCREEN_HEIGHT);
         document.body.appendChild(renderer.domElement);
 
-        const controls = new OrbitControls(camera, renderer.domElement);
-        controls.enableDamping = true;
-        controls.dampingFactor = 0.25;
-        controls.zoomSpeed = 0.5;
-        controls.rotateSpeed = 1;
-        controls.autoRotate = false;
-        controls.autoRotateSpeed = 20;
-        controls.enableKeys = false;
-        controls.screenSpacePanning = true;
-        controls.panSpeed = 5;
+        const controlsP = new OrbitControls(cameraP, renderer.domElement);
+        controlsP.enableDamping = true;
+        controlsP.dampingFactor = 0.25;
+        controlsP.zoomSpeed = 0.5;
+        controlsP.rotateSpeed = 1;
+        controlsP.autoRotate = false;
+        controlsP.autoRotateSpeed = 20;
+        controlsP.enableKeys = true;
+        controlsP.screenSpacePanning = true;
+        controlsP.panSpeed = 5;
+        controlsP.enabled = true;
+
+        const controlsO = new OrbitControls(cameraO, renderer.domElement);
+        controlsO.enableDamping = true;
+        controlsO.dampingFactor = 0.25;
+        controlsO.zoomSpeed = 0.5;
+        controlsO.rotateSpeed = 0.1;
+        controlsO.autoRotate = false;
+        controlsO.autoRotateSpeed = 20;
+        controlsO.enableKeys = true;
+        controlsO.screenSpacePanning = true;
+        controlsO.panSpeed = 5;
+        controlsO.enabled = false;
 
         const geometry = new THREE.BufferGeometry();
-        const vertices = new Float32Array([
-            -1, 1, 1,
-            1, -1, 1,
-            1, 1, -1
-        ]);
-        const colors = new Float32Array([
-            1, 0, 0,
-            0, 1, 0,
-            0, 0, 1
-        ]);
+        const vertices = new Float32Array();
+        const colors = new Float32Array();
 
         geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3).setUsage(THREE.DynamicDrawUsage));
         geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
-        const material = new THREE.PointsMaterial({size: 0.1, vertexColors: true});
+        const material = new THREE.PointsMaterial({ size: 0.1, vertexColors: true });
         const mesh = new THREE.Points(geometry, material);
 
+        scene.add(cameraXHelper);
         scene.add(mesh);
 
-        camera.position.z = -5;
+        cameraX.lookAt(0, 0, 1);
+        //cameraX.updateMatrix();
+        cameraX.updateMatrixWorld();
+        //cameraX.updateProjectionMatrix();
+        //cameraX.updateWorldMatrix();
+        cameraP.position.z = -5;
+        cameraO.position.z = -1000;
 
         return {
             scene: scene,
-            camera: camera,
+            cameraP: cameraP,
+            cameraO: cameraO,
+            cameraX: cameraX,
             renderer: renderer,
-            controls: controls,
-            geometry: geometry
+            controlsP: controlsP,
+            controlsO: controlsO,
+            geometry: geometry,
+            material: material
         };
     }
 
     const ctx = init();
+    let activeCamera = ctx.cameraP;
 
     function animate() {
         requestAnimationFrame(animate);
-        ctx.controls.update();
-        ctx.renderer.render(ctx.scene, ctx.camera);
+        ctx.controlsP.update();
+        ctx.controlsO.update();
+        ctx.renderer.render(ctx.scene, activeCamera);
     }
 
     const fileElm = document.getElementById("file");
@@ -117,14 +152,34 @@
     const centerYElm = document.getElementById("centerY");
     const minZElm = document.getElementById("minZ");
     const maxZElm = document.getElementById("maxZ");
+    const pSizeElm = document.getElementById("pSize");
+    const sizeAttentuationElm = document.getElementById("sizeAttentuation");
+    const orthoElm = document.getElementById("ortho");
 
     let pointsEntry, colors, palette;
 
-    fovElm.onchange = () => updateScene();
+    fovElm.onchange = () => {
+        ctx.cameraX.fov = parseFloat(fovElm.value);
+        ctx.cameraX.updateProjectionMatrix();
+        ctx.renderer.render(ctx.scene, ctx.cameraX);
+        updateScene();
+    }
     centerXElm.onchange = () => updateScene();
     centerYElm.onchange = () => updateScene();
     minZElm.onchange = () => updateScene();
     maxZElm.onchange = () => updateScene();
+    pSizeElm.onchange = () => {
+        ctx.material.size = parseFloat(pSizeElm.value);
+    };
+    sizeAttentuationElm.onchange = () => {
+        ctx.material.sizeAttenuation = sizeAttentuationElm.checked;
+        ctx.material.needsUpdate = true;
+    };
+    orthoElm.onchange = () => {
+        activeCamera = orthoElm.checked ? ctx.cameraO : ctx.cameraP
+        ctx.controlsO.enabled = orthoElm.checked;
+        ctx.controlsP.enabled = !orthoElm.checked;
+    };
 
     document.getElementById("dl").onclick = file;
 
@@ -132,16 +187,16 @@
         const points = getPoints(pointsEntry);
 
         let f = `ply
-format ascii 1.0
-element vertex ${points.length / 3}
-property double x
-property double y
-property double z
-property uchar red
-property uchar green
-property uchar blue
-end_header
-`;
+    format ascii 1.0
+    element vertex ${points.length / 3}
+    property double x
+    property double y
+    property double z
+    property uchar red
+    property uchar green
+    property uchar blue
+    end_header
+    `;
 
         let vertex = [];
 
@@ -169,20 +224,21 @@ end_header
         const fov = parseFloat(fovElm.value);
         const minZ = parseFloat(minZElm.value);
         const maxZ = parseFloat(maxZElm.value);
+        const fullWidth = entry.fullWidth;
 
         for (const i in entry.data) {
-            const fullWidth = entry.fullWidth;
-            const u = i % fullWidth;
-            if (u >= entry.width) continue;
+            const u = (i % fullWidth);
+            if (u > entry.width) continue;
             const v = Math.floor(i / fullWidth);
-            const index = v * fullWidth + (fullWidth - u);
+            const index = v * fullWidth + (fullWidth - 1 - u);
 
-            if (!entry.data.hasOwnProperty(index)) continue;
+            //if (!entry.data.hasOwnProperty(index)) continue;
             const d = entry.data[index];
 
             const fl = 0.5 / (Math.tan((fov / 2) * Math.PI / 180));
 
-            let x = (u / entry.width) - centerX;
+            const entryAspect = entry.width / entry.height;
+            let x = ((u / entry.width) - centerX) * entryAspect;
             let y = (v / entry.height) - centerY;
             let z = fl;
 
@@ -195,10 +251,10 @@ end_header
             //const dN = (((d / 0xFFFF) * ((1 - minZ) * maxZ)) + minZ) * 100;
             //const dN = (((d / 0xFFFF) * 1 - minZ) + minZ) * 100;
             //const dN = ((d * (1 - minZ) + 0xFFFF * minZ) / 0xFFFF) * 100;
-            const dN = ((d + 0xFFFF * minZ) / 0xFFFF) * 100;
+            const dN = ((d * (1 - minZ) + 0xFFFF * minZ) / 0xFFFF) * 100;
             //const dN = (d / 0xFFFF) * 100;
 
-            points.push(x * dN, y * dN, z * dN - 50);
+            points.push(x * dN, y * dN, z * dN);
         }
 
         return points;
@@ -211,9 +267,9 @@ end_header
 
             let fullWidth = entry.width + entry.padding;
             const u = i % fullWidth;
-            if (u >= entry.width) continue;
+            if (u > entry.width) continue;
             const v = Math.floor(i / fullWidth);
-            const index = v * fullWidth + (fullWidth - u);
+            const index = v * fullWidth + (fullWidth - 1 - u);
 
             if (!entry.data.hasOwnProperty(index)) continue;
             const color = palette[entry.data[index]];
@@ -227,7 +283,6 @@ end_header
     function updateScene() {
         const points = getPoints(pointsEntry);
         for (const i in points) {
-            if (!points.hasOwnProperty(i) || !ctx.geometry.attributes.position.array.hasOwnProperty(i)) continue;
             ctx.geometry.attributes.position.array[i] = points[i];
         }
 
@@ -236,8 +291,10 @@ end_header
     }
 
     document.getElementById("camReset").onclick = () => {
-        ctx.controls.reset();
-        ctx.camera.position.z = -5;
+        ctx.controlsP.reset();
+        ctx.controlsO.reset();
+        ctx.cameraP.position.z = -5;
+        ctx.cameraO.position.z = -1000;
     };
 
     fileElm.onchange = () => {
