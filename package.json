@@ -10,11 +10,14 @@
     "three": "^0.115.0"
   },
   "devDependencies": {
+    "gh-pages": "^2.2.0",
     "parcel-bundler": "^1.12.4"
   },
   "scripts": {
-    "dev": "parcel src/*.html",
-    "build": "parcel build src/*.html"
+    "dev": "parcel src/index.html",
+    "build": "parcel build src/index.html",
+    "predeploy": "rm -rf dist && parcel build src/index.html --public-url /DatPartoutExplorer",
+    "deploy": "gh-pages -d dist"
   },
   "repository": {
     "type": "git",
