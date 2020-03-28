@@ -1,59 +1,62 @@
 <!DOCTYPE html>
 <html>
+
 <head lang="en">
     <meta charset="UTF-8">
     <title>DAT</title>
-    <link rel="stylesheet" href="css/style.css"/>
-    <link rel="stylesheet" href="css/base16default.css"/>
+    <link rel="stylesheet" href="css/style.css" />
+    <link rel="stylesheet" href="css/base16default.css" />
 </head>
+
 <body>
-<label>File <input class="container" type="file" id="file"/></label><br/>
-
-<div id="top"></div>
-<hr/>
-<div id="images"></div>
-<script src="lib/index.js"></script>
-<script src="lib/DATPARTOUT.js"></script>
-<script src="lib/Math2.js"></script>
-<script>
-    function imageList(file) {
-        var listElm = document.createElement("div");
-        var palette;
-        var images = [];
-        file.groups.forEach(function (group, groupID) {
-            group.entries.forEach(function (entry, entryID) {
-                if (entry.type === 1) {
-                    images.push({
-                        entry: entry,
-                        entryID: entryID,
-                        groupID: groupID
-                    });
-                } else if (entry.type === 5) {
-                    palette = entry;
-                }
+    <a href="./index.html">Viewer</a><br>
+    <a href="./3d.html">3D Model Reconstruction</a><br>
+    <label>File <input class="container" type="file" id="file"></label>
+    <hr>
+    <div id="images"></div>
+    <script src="lib/index.js"></script>
+    <script src="lib/DATPARTOUT.js"></script>
+    <script src="lib/Math2.js"></script>
+    <script>
+        function imageList(file) {
+            var listElm = document.createElement("div");
+            var palette;
+            var images = [];
+            file.groups.forEach(function (group, groupID) {
+                group.entries.forEach(function (entry, entryID) {
+                    if (entry.type === 1) {
+                        images.push({
+                            entry: entry,
+                            entryID: entryID,
+                            groupID: groupID
+                        });
+                    } else if (entry.type === 5) {
+                        palette = entry;
+                    }
+                });
             });
-        });
-        images.forEach(function (image) {
-            var imageElm = image.entry.unk4 == 5 ? paletteXImgFromEntry(image.entry, palette) : paletteImgFromEntry(image.entry, palette);
-            imageElm.title = image.groupID + "-" + image.entryID;
-            listElm.appendChild(imageElm);
-        });
-        return listElm;
-    }
+            images.filter(image => image.entry.tableSize === 2).forEach(function (image) {
+                var imageElm = image.entry.unk4 == 5 ? paletteXImgFromEntry(image.entry, palette) : paletteImgFromEntry(image.entry, palette);
+                imageElm.title = image.groupID + "-" + image.entryID;
+                listElm.appendChild(imageElm);
+            });
+            return listElm;
+        }
 
-    var fileElm = document.getElementById("file");
-    var imagesElm = document.getElementById("images");
+        var fileElm = document.getElementById("file");
+        var imagesElm = document.getElementById("images");
 
-    fileElm.onchange = function () {
-        var f = fileElm.files[0],
-            r = new FileReader();
-        r.onload = function () {
-            var DATFILE = new DATPARTOUT(r.result);
-            imagesElm.innerHTML = "";
-            imagesElm.appendChild(imageList(DATFILE));
+        fileElm.onchange = function () {
+            var f = fileElm.files[0],
+                r = new FileReader();
+            r.onload = function () {
+                var DATFILE = new DATPARTOUT(r.result);
+                imagesElm.innerHTML = "";
+                imagesElm.appendChild(imageList(DATFILE));
+            };
+            r.readAsArrayBuffer(f);
         };
-        r.readAsArrayBuffer(f);
-    };
-</script>
+    </script>
 </body>
+
 </html>

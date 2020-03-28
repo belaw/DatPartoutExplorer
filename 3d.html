@@ -23,7 +23,8 @@
 </head>
 <body>
 <div id="controls">
-    <a href="index.html">Back</a><br>
+    <a href="./index.html">Viewer</a><br>
+    <a href="./imgs.html">Images</a><br>
     <input type="file" id="file"><br>
 
     <label for="viewFov">View FOV</label>
@@ -39,16 +40,25 @@
     <input type="number" id="centerY" min="0" max="1" step="0.1" value="0.5"><br>
 
     <label for="minZ">Min. Z</label>
-    <input type="number" id="minZ" step="0.01" value="0.53"><br>
+    <input type="number" id="minZ" step="0.01" min="-100" max="100" value="0.53"><br>
 
     <label for="pSize">Point Size</label>
-    <input type="number" id="pSize" step="0.01" value="1"><br>
+    <input type="number" id="pSize" step="0.01" min="-100" max="100" value="0.1"><br>
 
-    <label for="pSize">Size Attentuation</label>
-    <input type="checkbox" id="sizeAttentuation" checked><br>
+    <input type="checkbox" id="sizeAttentuation" checked>
+    <label for="pSize">Size Attentuation</label><br>
 
-    <label for="ortho">Orthographic Camera</label>
-    <input type="checkbox" id="ortho"><br>
+    <input type="checkbox" id="showHelper" checked>
+    <label for="showHelper">Show Helper</label><br>
+
+    <input type="checkbox" id="showRender" checked>
+    <label for="showRender">Show Render</label><br>
+
+    <label for="camera">Camera</label>
+    <select id="camera">
+        <option value="p">Perspective</option>
+        <option value="o">Orthographic</option>
+    </select><br>
 
     <button id="dl">File</button><br>
     <button id="camReset">Reset Camera</button>
