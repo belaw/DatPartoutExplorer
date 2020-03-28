@@ -14,22 +14,6 @@
     <label>File <input class="container" type="file" id="file" /></label><br>
     <hr>
     <script src="lib/index.js"></script>
-    <script src="lib/DATPARTOUT.js"></script>
-    <script src="lib/PAL.js"></script>
-    <script src="lib/Math2.js"></script>
-    <script>
-        var fileElm = document.getElementById("file");
-
-        fileElm.onchange = function () {
-            var f = fileElm.files[0],
-                r = new FileReader();
-            r.onload = function () {
-                var DATFILE = new DATPARTOUT(r.result);
-                document.body.appendChild(makeDAT(DATFILE));
-            };
-            r.readAsArrayBuffer(f);
-        };
-    </script>
 </body>
 
 </html>
