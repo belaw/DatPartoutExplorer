@@ -169,8 +169,6 @@ cameraElm.onchange = () => {
 showHelperElm.onchange = () => cameraRHelper.visible = showHelperElm.checked;
 showRenderElm.onchange = () => renderer2.domElement.style.display = showRenderElm.checked ? 'block' : 'none';
 
-document.getElementById("dl").onclick = file;
-
 /**
  * Converts the distances of a z Buffer to points in 3D space.
  * @param {Number[]} distances Z Buffer.
