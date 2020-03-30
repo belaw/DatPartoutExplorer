@@ -1,6 +1,8 @@
 import { DATPARTOUT } from './DATPARTOUT'
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import { ImageEntry } from './Entries/ImageEntry';
+import { ZBufferEntry } from './Entries/ZBufferEntry';
 
 const fileElm = document.getElementById("file");
 const viewFovElm = document.getElementById("viewFov");
@@ -100,7 +102,8 @@ function animate() {
     controlsP.update();
     controlsO.update();
     renderer.render(scene, activeCamera);
-    renderer2.render(scene, cameraR);
+    if (showRenderElm.checked)
+        renderer2.render(scene, cameraR);
 }
 
 function getFocalLength(fov) {
@@ -109,7 +112,6 @@ function getFocalLength(fov) {
 
 let distances;
 let colors;
-let palette;
 let fov = parseFloat(fovElm.value);
 let focalLength = getFocalLength(fov);
 let minZ = parseFloat(minZElm.value);
@@ -169,71 +171,46 @@ showRenderElm.onchange = () => renderer2.domElement.style.display = showRenderEl
 
 document.getElementById("dl").onclick = file;
 
-function file() {
-    const points = getPoints(distances, distancesWidth, distancesHeight);
-
-    let f = `ply
-format ascii 1.0
-element vertex ${points.length / 3}
-property double x
-property double y
-property double z
-property uchar red
-property uchar green
-property uchar blue
-end_header
-`;
-
-    let vertex = [];
-
-    for (const i in colors) {
-        if (!colors.hasOwnProperty(i)) continue;
-
-        if (i % 3 === 0 && i > 0) {
-            f += `${vertex.join(' ')}\n`;
-            vertex = [];
-        }
-
-        vertex[i % 3] = points[i];
-        vertex[(i % 3) + 3] = Math.floor(colors[i] * 255);
-    }
-    f += `${vertex.join(' ')}\n`;
-
-    console.log(f);
-    return f;
-}
-
-function convertDistancesEntry(data, fullWidth, width) {
-    const result = [];
-    const padding = fullWidth - width;
-
-    for (const i in data) {
-        const u = (i % fullWidth);
-        if (u >= width) continue;
-        const v = Math.floor(i / fullWidth);
-        const index = v * fullWidth + (fullWidth - 1 - (u + padding));
-
-        result.push(data[index]);
-    }
-
-    return result;
-}
-
-function getPoints(distances, width, height, offsetX = 0, offsetY = 0) {
-    const distancesAspect = width / height;
+/**
+ * Converts the distances of a z Buffer to points in 3D space.
+ * @param {Number[]} distances Z Buffer.
+ * @param {Number} width Width of Z Buffer.
+ * @param {Number} height Height of Z Buffer.
+ * @param {Number} offsetX 
+ * @param {Number} offsetY 
+ * @param {Number} parentWidth 
+ * @param {Number} parentHeight 
+ */
+function getPoints(
+    distances,
+    width,
+    height,
+    offsetX = 0,
+    offsetY = 0,
+    parentWidth = width,
+    parentHeight = height
+) {
+    const distancesAspect = parentWidth / parentHeight;
 
     const points = distances.flatMap((d, i) => {
         const u = offsetX + (i % width);
         const v = offsetY + Math.floor(i / width) + 1;
-        return getPoint(u / width, v / height, d, distancesAspect);
+        return getPoint(u / parentWidth, v / parentHeight, d, distancesAspect);
     });
 
     return points;
 }
 
+/**
+ * Converts UV Coordinates + Distance to a Point in 3D space.
+ * @param {Number} u U Coordinate.
+ * @param {Number} v V Coordinate.
+ * @param {Number} d Distance.
+ * @param {Number} a Aspect ratio.
+ */
 function getPoint(u, v, d, a) {
-    let x = (u - centerX) * a;
-    let y = v - centerY;
+    let x = (-u + centerX) * a;
+    let y = -v + centerY;
     let z = focalLength;
 
     const vLength = Math.sqrt((x * x) + (y * y) + (z * z));
@@ -245,25 +222,6 @@ function getPoint(u, v, d, a) {
     const dN = ((d * (1 - minZ) + 0xFFFF * minZ) / 0xFFFF) * maxDist;
 
     return [x * dN, y * dN, z * dN];
-}
-
-function getColors(entry, palette) {
-    const colors = [];
-
-    for (const i in entry.data) {
-        let fullWidth = entry.width + entry.padding;
-        const u = i % fullWidth;
-        if (u >= entry.width) continue;
-        const v = Math.floor(i / fullWidth);
-        const index = v * fullWidth + (fullWidth - 1 - (u + entry.padding));
-
-        if (!entry.data.hasOwnProperty(index)) continue;
-        const color = palette[entry.data[index]];
-
-        colors.push(color.r / 255, color.g / 255, color.b / 255);
-    }
-
-    return colors;
 }
 
 function updateScene() {
@@ -282,36 +240,6 @@ document.getElementById("camReset").onclick = () => {
     cameraP.position.z = -5;
     cameraO.position.z = -1000;
 };
-
-function getColorsAndPoints(entry) {
-    const colors = [];
-    const points = [];
-
-    const maxLine = entry.tableSize == 0 ? 600 : entry.tableSize == 1 ? 752 : 960;
-    let currentOffset = 0;
-    const a = distancesWidth / distancesHeight;
-    const xPos = entry.fullWidth - 220;
-    const yPos = entry.unk3 - 4;
-
-    for (const line of entry.lines) {
-        currentOffset += line.offset;
-        for (let i = 0; i < line.pixels.length; i++) {
-            const pixel = line.pixels[i];
-            const color = palette[pixel.color || 0] || 0;
-            colors.push(color.r / 255, color.g / 255, color.b / 255);
-
-            const u = (currentOffset + i) % maxLine;
-            const v = (entry.height - 1) - Math.floor((currentOffset + i) / maxLine);
-            const uN = ((distancesWidth - xPos) - u - 1) / distancesWidth;
-            const vN = ((distancesHeight - yPos) - v) / distancesHeight;
-
-            Array.prototype.push.apply(points, getPoint(uN, vN, pixel.dist, a));
-        }
-        currentOffset += line.pixels.length;
-    }
-
-    return { points, colors };
-}
 
 const tableObjects = [
     // { name: "lite84", group: 299, entry: 3 },
@@ -364,6 +292,13 @@ const tableObjects = [
     { name: "a_kick2", group: 624, entry: 3 },
 ];
 
+function getColors(imageData) {
+    return Array.from(imageData)
+        //               [ discard alpha  ]  [  discard rgba groups where a = 0  ]
+        .filter((_, i) => (i + 1) % 4 != 0 && imageData[i + (4 - i % 4) - 1] != 0)
+        .map(c => c / 255);
+}
+
 fileElm.onchange = () => {
     const f = fileElm.files[0];
     const r = new FileReader();
@@ -372,28 +307,35 @@ fileElm.onchange = () => {
     r.onload = () => {
         const datFile = new DATPARTOUT(r.result);
 
-        const distancesEntry = datFile.groups[212].entries[14];
+        /** @type {ZBufferEntry} */
+        const distancesEntry = datFile.groups[212][14];
         distancesWidth = distancesEntry.width;
         distancesHeight = distancesEntry.height;
+
         renderer2.setSize(distancesWidth, distancesHeight);
         cameraR.aspect = distancesWidth / distancesHeight;
         cameraR.updateProjectionMatrix();
         cameraRHelper.update();
-        distances = convertDistancesEntry(
-            distancesEntry.data,
-            distancesEntry.fullWidth,
-            distancesEntry.width
-        );
+
+        distances = distancesEntry.zBuffer;
         const points = getPoints(distances, distancesWidth, distancesHeight);
 
-        palette = datFile.groups[1].entries[4].data.colors;
-        const colorsEntry = datFile.groups[212].entries[3];
-        colors = getColors(colorsEntry, palette);
+        /** @type {ImageEntry} */
+        const colorsEntry = datFile.groups[212][3];
+        colors = getColors(colorsEntry.imageData.data);
 
         for (const tableObject of tableObjects) {
-            var bois = getColorsAndPoints(datFile.groups[tableObject.group].entries[tableObject.entry]);
-            Array.prototype.push.apply(colors, bois.colors);
-            Array.prototype.push.apply(points, bois.points);
+            /** @type {ImageEntry} */
+            const entry = datFile.groups[tableObject.group][tableObject.entry];
+            Array.prototype.push.apply(colors, getColors(entry.imageData.data));
+            Array.prototype.push.apply(points, getPoints(
+                entry.zBuffer,
+                entry.width,
+                entry.height,
+                entry.mp1 - 220,
+                entry.mp2 - 4,
+                distancesWidth,
+                distancesHeight));
         }
 
         geometry.setAttribute('position', new THREE.Float32BufferAttribute(new Float32Array(points), 3).setUsage(THREE.DynamicDrawUsage));
