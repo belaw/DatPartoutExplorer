@@ -191,8 +191,8 @@ function getPoints(
     const distancesAspect = parentWidth / parentHeight;
 
     const points = distances.flatMap((d, i) => {
-        const u = offsetX + (i % width);
-        const v = offsetY + Math.floor(i / width) + 1;
+        const u = offsetX + (i % width) + 1;
+        const v = offsetY + Math.floor(i / width);
         return getPoint(u / parentWidth, v / parentHeight, d, distancesAspect);
     });
 
