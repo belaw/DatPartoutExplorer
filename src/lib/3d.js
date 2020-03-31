@@ -289,6 +289,11 @@ const tableObjects = [
     { name: "a_flag1", group: 600, entry: 3 },
     { name: "a_flag2", group: 615, entry: 3 },
 
+    { name: "v_bloc1", group: 617, entry: 3 },
+
+    { name: "v_gate1", group: 618, entry: 3 },
+    { name: "v_gate2", group: 619, entry: 3 },
+
     { name: "a_kick1", group: 622, entry: 3 },
     { name: "a_kick2", group: 624, entry: 3 },
 ];
