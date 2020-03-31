@@ -87,13 +87,12 @@ renderer.domElement.addEventListener("mousemove", event => {
     mouse.y = - (event.clientY / renderer.domElement.height) * 2 + 1;
 });
 
-renderer.domElement.addEventListener("keydown", event => {
-    if (event.keyCode == 83) {
-        raycaster.setFromCamera(mouse, activeCamera);
-        const intersections = raycaster.intersectObject(mesh);
-        if (intersections.length > 0) {
-            activeControls.target = intersections[0].point;
-        }
+renderer.domElement.addEventListener("dblclick", event => {
+    raycaster.setFromCamera(mouse, activeCamera);
+    const intersections = raycaster.intersectObject(mesh);
+    const validIntersections = intersections.filter(v => v.distance > 0);
+    if (validIntersections.length > 0) {
+        activeControls.target = validIntersections[0].point;
     }
 });
 
