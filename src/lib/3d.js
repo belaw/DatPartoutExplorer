@@ -27,8 +27,12 @@ const maxDist = 100;
 const scene = new THREE.Scene();
 const cameraR = new THREE.PerspectiveCamera(parseFloat(fovElm.value), distancesWidth / distancesHeight, 0.1, maxDist);
 const cameraRHelper = new THREE.CameraHelper(cameraR);
+cameraRHelper.layers.disable(0);
+cameraRHelper.layers.enable(1);
 const cameraP = new THREE.PerspectiveCamera(parseFloat(viewFovElm.value), aspect, 0.1, 2000);
+cameraP.layers.enable(1);
 const cameraO = new THREE.OrthographicCamera(frustumSize * aspect / - 2, frustumSize * aspect / 2, frustumSize / 2, frustumSize / - 2, 0.1, 2000);
+cameraO.layers.enable(1);
 const raycaster = new THREE.Raycaster();
 
 scene.background = new THREE.Color(0.2, 0.1, 0);
