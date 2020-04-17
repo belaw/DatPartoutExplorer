@@ -77,7 +77,7 @@ scene.add(mesh);
 
 cameraR.lookAt(0, 0, 1);
 cameraR.updateMatrixWorld();
-cameraP.position.z = -5;
+controlsP.target = new THREE.Vector3(0, 0, maxDist / 2);
 cameraO.position.z = -1000;
 
 let activeCamera = cameraP;
@@ -91,13 +91,23 @@ renderer.domElement.addEventListener("mousemove", event => {
     mouse.y = - (event.clientY / renderer.domElement.height) * 2 + 1;
 });
 
-renderer.domElement.addEventListener("dblclick", event => {
-    raycaster.setFromCamera(mouse, activeCamera);
+function raycastTarget(coords) {
+    raycaster.setFromCamera(coords, activeCamera);
     const intersections = raycaster.intersectObject(mesh);
     const validIntersections = intersections.filter(v => v.distance > 0);
     if (validIntersections.length > 0) {
         activeControls.target = validIntersections[0].point;
     }
+}
+
+renderer.domElement.addEventListener("dblclick", () => raycastTarget(mouse));
+
+window.addEventListener("resize", e => {
+    cameraO.aspect = window.innerWidth / window.innerHeight;
+    cameraO.updateProjectionMatrix();
+    cameraP.aspect = window.innerWidth / window.innerHeight;
+    cameraP.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
 function animate() {
@@ -238,8 +248,10 @@ function updateScene() {
 document.getElementById("camReset").onclick = () => {
     controlsP.reset();
     controlsO.reset();
-    cameraP.position.z = -5;
+    controlsP.target = new THREE.Vector3(0, 0, maxDist / 2);
+    controlsP.update();
     cameraO.position.z = -1000;
+    raycastTarget(new THREE.Vector2(0, 0));
 };
 
 const tableObjects = [
@@ -351,6 +363,7 @@ fileElm.onchange = () => {
         geometry.setDrawRange(0, points.length);
 
         updateScene();
+        raycastTarget(new THREE.Vector2(0, 0));
     };
 };
 
