@@ -1,6 +1,7 @@
 import { DATPARTOUT } from './DATPARTOUT'
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import * as VertexBuilder from './VertexBuilder'
 import { ImageEntry } from './Entries/ImageEntry';
 import { ZBufferEntry } from './Entries/ZBufferEntry';
 
@@ -69,8 +70,10 @@ controlsO.panSpeed = 5;
 controlsO.enabled = false;
 
 const geometry = new THREE.BufferGeometry();
-const material = new THREE.PointsMaterial({ size: parseFloat(pSizeElm.value), vertexColors: true });
-const mesh = new THREE.Points(geometry, material);
+//const material = new THREE.PointsMaterial({ size: parseFloat(pSizeElm.value), vertexColors: true });
+//const mesh = new THREE.Points(geometry, material);
+const material = new THREE.MeshBasicMaterial({ vertexColors: true });
+const mesh = new THREE.Mesh(geometry, material);
 
 scene.add(cameraRHelper);
 scene.add(mesh);
@@ -190,7 +193,8 @@ showRenderElm.onchange = () => renderer2.domElement.style.display = showRenderEl
  * @param {Number} offsetX 
  * @param {Number} offsetY 
  * @param {Number} parentWidth 
- * @param {Number} parentHeight 
+ * @param {Number} parentHeight
+ * @returns {Number[]} x, y, z, x, y, z, ...
  */
 function getPoints(
     distances,
@@ -218,6 +222,7 @@ function getPoints(
  * @param {Number} v V Coordinate.
  * @param {Number} d Distance.
  * @param {Number} a Aspect ratio.
+ * @returns {Number[]} x, y, z
  */
 function getPoint(u, v, d, a) {
     let x = (-u + centerX) * a;
@@ -237,8 +242,10 @@ function getPoint(u, v, d, a) {
 
 function updateScene() {
     const points = getPoints(distances, distancesWidth, distancesHeight);
-    for (const i in points) {
-        geometry.attributes.position.array[i] = points[i];
+    const vertexIndices = VertexBuilder.getVertexIndices(points, distancesWidth, distancesHeight);
+    const vertices = VertexBuilder.getVertices(points, vertexIndices);
+    for (const i in vertices) {
+        geometry.attributes.position.array[i] = vertices[i];
     }
 
     geometry.attributes.position.needsUpdate = true;
@@ -337,30 +344,37 @@ fileElm.onchange = () => {
 
         distances = distancesEntry.zBuffer;
         const points = getPoints(distances, distancesWidth, distancesHeight);
+        const vertexIndices = VertexBuilder.getVertexIndices(points, distancesWidth, distancesHeight);
 
         /** @type {ImageEntry} */
         const colorsEntry = datFile.groups[212][3];
-        colors = getColors(colorsEntry.imageData.data);
+        colors = VertexBuilder.getVertices(getColors(colorsEntry.imageData.data), vertexIndices);
 
-        for (const tableObject of tableObjects) {
-            /** @type {ImageEntry} */
-            const entry = datFile.groups[tableObject.group][tableObject.entry];
-            Array.prototype.push.apply(colors, getColors(entry.imageData.data));
-            Array.prototype.push.apply(points, getPoints(
-                entry.zBuffer,
-                entry.width,
-                entry.height,
-                entry.mp1 - 220,
-                entry.mp2 - 4,
-                distancesWidth,
-                distancesHeight));
-        }
+        const vertices = VertexBuilder.getVertices(points, vertexIndices);
 
-        geometry.setAttribute('position', new THREE.Float32BufferAttribute(new Float32Array(points), 3).setUsage(THREE.DynamicDrawUsage));
+        //for (const tableObject of tableObjects) {
+        //    /** @type {ImageEntry} */
+        //    const entry = datFile.groups[tableObject.group][tableObject.entry];
+        //    const objectPoints = getPoints(
+        //        entry.zBuffer,
+        //        entry.width,
+        //        entry.height,
+        //        entry.mp1 - 220,
+        //        entry.mp2 - 4,
+        //        distancesWidth,
+        //        distancesHeight);
+        //    const objectIndices = VertexBuilder.getVertexIndices(objectPoints, entry.width, entry.height);
+        //    const objectColors = VertexBuilder.getVertices(getColors(entry.imageData.data), objectIndices);
+        //    const objectVertices = VertexBuilder.getVertices(objectPoints, objectIndices);
+        //    Array.prototype.push.apply(colors, objectColors);
+        //    Array.prototype.push.apply(vertices, objectVertices);
+        //}
+
+        geometry.setAttribute('position', new THREE.Float32BufferAttribute(new Float32Array(vertices), 3).setUsage(THREE.DynamicDrawUsage));
         geometry.setAttribute('color', new THREE.Float32BufferAttribute(new Float32Array(colors), 3));
         geometry.attributes.position.needsUpdate = true;
         geometry.attributes.color.needsUpdate = true;
-        geometry.setDrawRange(0, points.length);
+        geometry.setDrawRange(0, vertices.length);
 
         updateScene();
         raycastTarget(new THREE.Vector2(0, 0));
