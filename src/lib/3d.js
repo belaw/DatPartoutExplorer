@@ -1,11 +1,11 @@
 import { DATPARTOUT } from './DATPARTOUT'
 import * as THREE from 'three';
-import * as VertexBuilder from './VertexBuilder'
 import { OrbitControls } from './OrbitControls';//'three/examples/jsm/controls/OrbitControls.js';
 import { ColladaExporter } from 'three/examples/jsm/exporters/ColladaExporter.js';
 import { ImageEntry } from './Entries/ImageEntry';
 import { ZBufferEntry } from './Entries/ZBufferEntry';
 import { saveString, saveArrayBuffer } from "./Saver";
+import { getMesh } from './MeshBuilder';
 
 const fileElm = document.getElementById("file");
 const viewFovElm = document.getElementById("viewFov");
@@ -26,6 +26,14 @@ const frustumSize = 600;
 let distancesWidth = 100;
 let distancesHeight = 100;
 const maxDist = 100;
+
+/** @type {THREE.Mesh} */
+let mesh;
+/** @type {ZBufferEntry} */
+let distancesEntry;
+/** @type {ImageEntry} */
+let colorsEntry;
+
 
 const scene = new THREE.Scene();
 const cameraR = new THREE.PerspectiveCamera(parseFloat(fovElm.value), distancesWidth / distancesHeight, 0.1, maxDist);
@@ -69,14 +77,7 @@ controlsO.screenSpacePanning = true;
 controlsO.panSpeed = 5;
 controlsO.enabled = false;
 
-const geometry = new THREE.BufferGeometry();
-//const material = new THREE.PointsMaterial({ size: parseFloat(pSizeElm.value), vertexColors: true });
-//const mesh = new THREE.Points(geometry, material);
-const material = new THREE.MeshBasicMaterial({ vertexColors: true });
-const mesh = new THREE.Mesh(geometry, material);
-
 scene.add(cameraRHelper);
-scene.add(mesh);
 
 cameraR.lookAt(0, 0, 1);
 cameraR.updateMatrixWorld();
@@ -122,14 +123,7 @@ function animate() {
         renderer2.render(scene, cameraR);
 }
 
-function getFocalLength(fov) {
-    return 0.5 / (Math.tan((fov / 2) * Math.PI / 180));
-}
-
-let distances;
-let colors;
 let fov = parseFloat(fovElm.value);
-let focalLength = getFocalLength(fov);
 let minZ = parseFloat(minZElm.value);
 let centerX = parseFloat(centerXElm.value);
 let centerY = parseFloat(centerYElm.value);
@@ -184,7 +178,6 @@ function deg(rad) {
 
 fovElm.onchange = () => {
     fov = parseFloat(fovElm.value);
-    focalLength = getFocalLength(fov);
     cameraR.fov = fov;
     cameraR.updateProjectionMatrix();
     cameraRHelper.update();
@@ -207,11 +200,11 @@ minZElm.onchange = () => {
     updateScene();
 };
 pSizeElm.onchange = () => {
-    material.size = parseFloat(pSizeElm.value);
+    mesh.material.size = parseFloat(pSizeElm.value);
 };
 sizeAttentuationElm.onchange = () => {
-    material.sizeAttenuation = sizeAttentuationElm.checked;
-    material.needsUpdate = true;
+    mesh.material.sizeAttenuation = sizeAttentuationElm.checked;
+    mesh.material.needsUpdate = true;
 };
 cameraElm.onchange = () => {
     switch (cameraElm.value) {
@@ -242,73 +235,6 @@ document.getElementById("export").onclick = () => {
     });
 }
 
-/**
- * Converts the distances of a z Buffer to points in 3D space.
- * @param {Number[]} distances Z Buffer.
- * @param {Number} width Width of Z Buffer.
- * @param {Number} height Height of Z Buffer.
- * @param {Number} offsetX 
- * @param {Number} offsetY 
- * @param {Number} parentWidth 
- * @param {Number} parentHeight
- * @returns {Number[]} x, y, z, x, y, z, ...
- */
-function getPoints(
-    distances,
-    width,
-    height,
-    offsetX = 0,
-    offsetY = 0,
-    parentWidth = width,
-    parentHeight = height
-) {
-    const distancesAspect = parentWidth / parentHeight;
-
-    const points = distances.flatMap((d, i) => {
-        const u = offsetX + (i % width) + 1;
-        const v = offsetY + Math.floor(i / width);
-        return getPoint(u / parentWidth, v / parentHeight, d, distancesAspect);
-    });
-
-    return points;
-}
-
-/**
- * Converts UV Coordinates + Distance to a Point in 3D space.
- * @param {Number} u U Coordinate.
- * @param {Number} v V Coordinate.
- * @param {Number} d Distance.
- * @param {Number} a Aspect ratio.
- * @returns {Number[]} x, y, z
- */
-function getPoint(u, v, d, a) {
-    let x = (-u + centerX) * a;
-    let y = -v + centerY;
-    let z = focalLength;
-
-    const vLength = Math.sqrt((x * x) + (y * y) + (z * z));
-
-    x /= vLength;
-    y /= vLength;
-    z /= vLength;
-
-    const dN = ((d * (1 - minZ) + 0xFFFF * minZ) / 0xFFFF) * maxDist;
-
-    return [x * dN, y * dN, z * dN];
-}
-
-function updateScene() {
-    const points = getPoints(distances, distancesWidth, distancesHeight);
-    const vertexIndices = VertexBuilder.getVertexIndices(points, distancesWidth, distancesHeight);
-    const vertices = VertexBuilder.getVertices(points, vertexIndices);
-    for (const i in vertices) {
-        geometry.attributes.position.array[i] = vertices[i];
-    }
-
-    geometry.attributes.position.needsUpdate = true;
-    geometry.computeBoundingSphere();
-}
-
 document.getElementById("camReset").onclick = () => {
     controlsP.reset();
     controlsO.reset();
@@ -317,6 +243,43 @@ document.getElementById("camReset").onclick = () => {
     cameraO.position.z = -1000;
     raycastTarget(new THREE.Vector2(0, 0));
 };
+
+function updateScene(){
+    scene.remove(mesh);
+    mesh = getMesh(
+        distancesEntry.zBuffer,
+        colorsEntry.imageData.data,
+        distancesEntry.width,
+        distancesEntry.height,
+        fov,
+        maxDist,
+        minZ);
+
+    renderer2.setSize(distancesWidth, distancesHeight);
+    cameraR.aspect = distancesWidth / distancesHeight;
+    cameraR.updateProjectionMatrix();
+    cameraRHelper.update();
+
+    //for (const tableObject of tableObjects) {
+    //    /** @type {ImageEntry} */
+    //    const entry = datFile.groups[tableObject.group][tableObject.entry];
+    //    const objectPoints = getPoints(
+    //        entry.zBuffer,
+    //        entry.width,
+    //        entry.height,
+    //        entry.mp1 - 220,
+    //        entry.mp2 - 4,
+    //        distancesWidth,
+    //        distancesHeight);
+    //    const objectIndices = VertexBuilder.getVertexIndices(objectPoints, entry.width, entry.height);
+    //    const objectColors = VertexBuilder.getVertices(getColors(entry.imageData.data), objectIndices);
+    //    const objectVertices = VertexBuilder.getVertices(objectPoints, objectIndices);
+    //    Array.prototype.push.apply(colors, objectColors);
+    //    Array.prototype.push.apply(vertices, objectVertices);
+    //}
+
+    scene.add(mesh);
+}
 
 const tableObjects = [
     // { name: "lite84", group: 299, entry: 3 },
@@ -374,13 +337,6 @@ const tableObjects = [
     { name: "a_kick2", group: 624, entry: 3 },
 ];
 
-function getColors(imageData) {
-    return Array.from(imageData)
-        //               [ discard alpha  ]  [  discard rgba groups where a = 0  ]
-        .filter((_, i) => (i + 1) % 4 != 0 && imageData[i + (4 - i % 4) - 1] != 0)
-        .map(c => c / 255);
-}
-
 fileElm.onchange = () => {
     const f = fileElm.files[0];
     const r = new FileReader();
@@ -389,51 +345,14 @@ fileElm.onchange = () => {
     r.onload = () => {
         const datFile = new DATPARTOUT(r.result);
 
-        /** @type {ZBufferEntry} */
-        const distancesEntry = datFile.groups[212][14];
+        distancesEntry = datFile.groups[212][14];
+        colorsEntry = datFile.groups[212][3];
+
         distancesWidth = distancesEntry.width;
         distancesHeight = distancesEntry.height;
 
-        renderer2.setSize(distancesWidth, distancesHeight);
-        cameraR.aspect = distancesWidth / distancesHeight;
-        cameraR.updateProjectionMatrix();
-        cameraRHelper.update();
-
-        distances = distancesEntry.zBuffer;
-        const points = getPoints(distances, distancesWidth, distancesHeight);
-        const vertexIndices = VertexBuilder.getVertexIndices(points, distancesWidth, distancesHeight);
-
-        /** @type {ImageEntry} */
-        const colorsEntry = datFile.groups[212][3];
-        colors = VertexBuilder.getVertices(getColors(colorsEntry.imageData.data), vertexIndices);
-
-        const vertices = VertexBuilder.getVertices(points, vertexIndices);
-
-        //for (const tableObject of tableObjects) {
-        //    /** @type {ImageEntry} */
-        //    const entry = datFile.groups[tableObject.group][tableObject.entry];
-        //    const objectPoints = getPoints(
-        //        entry.zBuffer,
-        //        entry.width,
-        //        entry.height,
-        //        entry.mp1 - 220,
-        //        entry.mp2 - 4,
-        //        distancesWidth,
-        //        distancesHeight);
-        //    const objectIndices = VertexBuilder.getVertexIndices(objectPoints, entry.width, entry.height);
-        //    const objectColors = VertexBuilder.getVertices(getColors(entry.imageData.data), objectIndices);
-        //    const objectVertices = VertexBuilder.getVertices(objectPoints, objectIndices);
-        //    Array.prototype.push.apply(colors, objectColors);
-        //    Array.prototype.push.apply(vertices, objectVertices);
-        //}
-
-        geometry.setAttribute('position', new THREE.Float32BufferAttribute(new Float32Array(vertices), 3).setUsage(THREE.DynamicDrawUsage));
-        geometry.setAttribute('color', new THREE.Float32BufferAttribute(new Float32Array(colors), 3));
-        geometry.attributes.position.needsUpdate = true;
-        geometry.attributes.color.needsUpdate = true;
-        geometry.setDrawRange(0, vertices.length);
-
         updateScene();
+
         raycastTarget(new THREE.Vector2(0, 0));
     };
 };
