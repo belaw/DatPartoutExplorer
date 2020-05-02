@@ -7,6 +7,8 @@ import { TextEntry } from './Entries/TextEntry';
 import { ZBufferEntry } from './Entries/ZBufferEntry';
 import { ResourceIdentifierEntry } from './Entries/ResourceIdentifierEntry';
 import { DefaultEntry } from './Entries/DefaultEntry';
+import { FloatTableEntry } from './Entries/FloatTableEntry';
+import { IntTableEntry } from './Entries/IntTableEntry';
 
 export class DATPARTOUT {
 
@@ -70,6 +72,12 @@ export class DATPARTOUT {
                     case 3: // TEXT
                     case 9: // TEXT2
                         entry = new TextEntry(reader);
+                        break;
+                    case 10: // INT TABLE
+                        entry = new IntTableEntry(reader);
+                        break;
+                    case 11: // FLOAT TABLE
+                        entry = new FloatTableEntry(reader);
                         break;
                     case 12: // Z BUFFER DATA
                         entry = new ZBufferEntry(reader);

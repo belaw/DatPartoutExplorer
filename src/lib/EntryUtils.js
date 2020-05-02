@@ -1,6 +1,7 @@
 import { ZBufferEntry } from "./Entries/ZBufferEntry";
 import { ImageEntry } from "./Entries/ImageEntry";
 import { PaletteEntry } from "./Entries/PaletteEntry";
+import { FloatTableEntry } from "./Entries/FloatTableEntry";
 
 /**
  * @param {ZBufferEntry} entry
@@ -38,6 +39,32 @@ function paletteImgFromEntry(entry) {
 }
 
 /**
+ * @param {FloatTableEntry} entry 
+ */
+function collisionBoxImgFromEntry(entry) {
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+    const coords = entry.table.slice(2, 2 + entry.table[1] * 2);
+    const scale = 25;
+    const size = (coords.map(c => Math.abs(c)).reduce((p, c) => c > p ? c : p) * 2 * scale) + 10;
+    canvas.width = size;
+    canvas.height = size;
+    ctx.translate(canvas.width / 2, canvas.height / 2);
+    ctx.scale(-1, 1);
+    ctx.strokeStyle = "#FFFFFF";
+    ctx.lineWidth = 1;
+    ctx.moveTo(coords[0] * scale, coords[1] * scale);
+    ctx.beginPath();
+    for (let i = 2; i < coords.length - 1; i += 2) {
+        ctx.lineTo(coords[i] * scale, coords[i + 1] * scale);
+    }
+    ctx.closePath();
+    ctx.stroke();
+
+    return canvas;
+}
+
+/**
  * @param {PaletteEntry} entry
  */
 function paletteFromEntry(entry) {
@@ -64,4 +91,4 @@ function paletteFromEntry(entry) {
     return canvas;
 }
 
-export { paletteFromEntry, paletteImgFromEntry, zBufferImgFromEntry };
+export { paletteFromEntry, paletteImgFromEntry, zBufferImgFromEntry, collisionBoxImgFromEntry };

@@ -7,6 +7,8 @@ import { ImageEntry } from "./Entries/ImageEntry";
 import { TextEntry } from "./Entries/TextEntry";
 import { PaletteEntry } from "./Entries/PaletteEntry";
 import { ZBufferEntry } from "./Entries/ZBufferEntry";
+import { FloatTableEntry } from "./Entries/FloatTableEntry";
+import { IntTableEntry } from "./Entries/IntTableEntry";
 
 /**
  * 
@@ -64,6 +66,17 @@ function makeDAT(file) {
             } else if (entry instanceof PaletteEntry) {
                 //palFile = new PAL(entry.data.colors);
                 dataListElm.appendChild(EntryUtils.paletteFromEntry(entry));
+            } else if (entry instanceof FloatTableEntry) {
+                createElement(elmItem, dataListElm, `Elements: ${entry.table.length}`);
+                createElement(elmItem, dataListElm, entry.table.join(", "));
+                if (entry.table[0] == 600 || entry.table[0] == 1300) {
+                    const x = EntryUtils.collisionBoxImgFromEntry(entry);
+                    x.style.border = "1px solid white";
+                    dataListElm.appendChild(x);
+                }
+            } else if (entry instanceof IntTableEntry) {
+                createElement(elmItem, dataListElm, `Elements: ${entry.table.length}`);
+                createElement(elmItem, dataListElm, entry.table.join(", "));
             } else if (entry instanceof ZBufferEntry) {
                 createElement(elmItem, dataListElm, "Width: " + entry.width + "px");
                 createElement(elmItem, dataListElm, "Height: " + entry.height + "px");
@@ -108,6 +121,10 @@ function type(entry) {
         return { name: "TEXT", color: 'base0A' };
     } else if (entry instanceof PaletteEntry) {
         return { name: "PALETTE", color: 'base0B' };
+    } else if (entry instanceof IntTableEntry) {
+        return { name: "INT TABLE", color: 'base0E' };
+    } else if (entry instanceof FloatTableEntry) {
+        return { name: "FLOAT TABLE", color: 'base0C' };
     } else if (entry instanceof ZBufferEntry) {
         return { name: "Z BUFFER DATA", color: 'base0D' };
     } else {

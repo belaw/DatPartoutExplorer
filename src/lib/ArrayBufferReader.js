@@ -22,6 +22,22 @@ export class ArrayBufferReader {
     }
 
     /**
+     * Reads a float from the file.
+     * @param {Boolean} advancePointer Whether to advance the file pointer or not.
+     * @returns {Number} The float.
+     */
+    readFloat(advancePointer = true) {
+        const buffer = new ArrayBuffer(4);
+        const view = new DataView(buffer);
+        const bytes = this.readBytes(4, advancePointer);
+        for (const i in bytes) {
+            view.setUint8(i, bytes[i]);
+        }
+
+        return view.getFloat32(0, true);
+    }
+
+    /**
      * Reads a string from the file.
      * @param {Number} nBytes Number of bytes to read.
      * @param {Boolean} advancePointer Whether to advance the file pointer or not.
