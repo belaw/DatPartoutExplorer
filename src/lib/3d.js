@@ -32,8 +32,8 @@ meshBuilder.centerX = parseFloat(centerXElm.value);
 meshBuilder.centerY = parseFloat(centerYElm.value);
 meshBuilder.size = 100;
 
-/** @type {THREE.Mesh} */
-let mesh;
+/** @type {THREE.Mesh[]} */
+let meshes = [];
 /** @type {ZBufferEntry} */
 let distancesEntry;
 /** @type {ImageEntry} */
@@ -101,7 +101,7 @@ renderer.domElement.addEventListener("mousemove", event => {
 
 function raycastTarget(coords) {
     raycaster.setFromCamera(coords, activeCamera);
-    const intersections = raycaster.intersectObject(mesh);
+    const intersections = raycaster.intersectObjects(meshes);
     const validIntersections = intersections.filter(v => v.distance > 0);
     if (validIntersections.length > 0) {
         activeControls.target = validIntersections[0].point;
@@ -200,11 +200,15 @@ minZElm.onchange = () => {
     updateScene();
 };
 pSizeElm.onchange = () => {
-    mesh.material.size = parseFloat(pSizeElm.value);
+    for (const mesh of meshes) {
+        mesh.material.size = parseFloat(pSizeElm.value);
+    }
 };
 sizeAttentuationElm.onchange = () => {
-    mesh.material.sizeAttenuation = sizeAttentuationElm.checked;
-    mesh.material.needsUpdate = true;
+    for (const mesh of meshes) {
+        mesh.material.sizeAttenuation = sizeAttentuationElm.checked;
+        mesh.material.needsUpdate = true;
+    }
 };
 cameraElm.onchange = () => {
     switch (cameraElm.value) {
@@ -227,7 +231,7 @@ showHelperElm.onchange = () => cameraRHelper.visible = showHelperElm.checked;
 showRenderElm.onchange = () => renderer2.domElement.style.display = showRenderElm.checked ? 'block' : 'none';
 document.getElementById("export").onclick = () => {
     const exporter = new ColladaExporter();
-    exporter.parse(mesh, result => {
+    exporter.parse(scene, result => {
         saveString(result.data, "cadet.dae");
         result.textures.forEach(tex => {
             saveArrayBuffer(tex.data, `${tex.name}.${tex.ext}`);
@@ -245,12 +249,15 @@ document.getElementById("camReset").onclick = () => {
 };
 
 function updateScene() {
-    if (mesh !== undefined) {
-        scene.remove(mesh);
-        mesh.material.dispose();
-        mesh.geometry.dispose();
+    for (const mesh of meshes) {
+        if (mesh !== undefined) {
+            scene.remove(mesh);
+            mesh.material.dispose();
+            mesh.geometry.dispose();
+        }
     }
-    mesh = meshBuilder.buildMesh(distancesEntry.zBuffer, colorsEntry.imageData.data);
+    meshes = [];
+    meshes.push(meshBuilder.buildMesh(distancesEntry.zBuffer, colorsEntry.imageData.data));
 
     renderer2.setSize(meshBuilder.width, meshBuilder.height);
     cameraR.aspect = meshBuilder.width / meshBuilder.height;
@@ -275,7 +282,9 @@ function updateScene() {
     //    Array.prototype.push.apply(vertices, objectVertices);
     //}
 
-    scene.add(mesh);
+    for (const mesh of meshes) {
+        scene.add(mesh);
+    }
 }
 
 const tableObjects = [
