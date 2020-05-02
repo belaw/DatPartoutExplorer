@@ -46,15 +46,19 @@ export class MeshBuilder {
      * 
      * @param {number[]} zBuffer The distances.
      * @param {number[]} colors The colors.
+     * @param {number} [offsetX]
+     * @param {number} [offsetY]
+     * @param {number} [childWidth]
+     * @param {number} [childHeight]
      * @returns {THREE.Mesh} The mesh.
      */
-    buildMesh(zBuffer, colors) {
+    buildMesh(zBuffer, colors, offsetX = 0, offsetY = 0, childWidth = this.width, childHeight = this.height) {
         const geometry = new THREE.BufferGeometry();
         const material = new THREE.MeshBasicMaterial({ vertexColors: true });
         const mesh = new THREE.Mesh(geometry, material);
 
-        const points = this.getPoints(zBuffer);
-        const vertexIndices = VertexBuilder.getVertexIndices(points, this.width, this.height);
+        const points = this.getPoints(zBuffer, offsetX, offsetY, childWidth);
+        const vertexIndices = VertexBuilder.getVertexIndices(points, childWidth, childHeight);
         const vertices = VertexBuilder.getVertices(points, vertexIndices);
         const vertexColors = VertexBuilder.getVertices(this.getColors(colors), vertexIndices);
 
@@ -69,25 +73,35 @@ export class MeshBuilder {
 
     /**
      * Converts the distances of a z Buffer to points in 3D space.
+     * The optional parameters can be provided if the distances cover a smaller area within the bounds of the MeshBuilder (width x height).
      * @param {Number[]} distances Z Buffer.
-     * @param {Number} offsetX 
-     * @param {Number} offsetY 
-     * @param {Number} parentWidth 
-     * @param {Number} parentHeight
+     * @param {Number} [offsetX]
+     * @param {Number} [offsetY]
+     * @param {Number} [childWidth]
      * @returns {Number[]} x, y, z, x, y, z, ...
      */
     getPoints(
         distances,
         offsetX = 0,
         offsetY = 0,
-        parentWidth = this.width,
-        parentHeight = this.height
+        childWidth = this.width
     ) {
-        const points = distances.flatMap((d, i) => {
-            const u = offsetX + (i % this.width) + 1;
-            const v = offsetY + Math.floor(i / this.width);
-            return this.getPoint(u / parentWidth, v / parentHeight, d);
-        });
+        const points = [];
+        for (let i = 0; i < distances.length; i++) {
+            const d = distances[i];
+            if (d === undefined) {
+                points.push(undefined, undefined, undefined);
+            } else {
+                const u = offsetX + (i % childWidth) + 1;
+                const v = offsetY + Math.floor(i / childWidth);
+                Array.prototype.push.apply(points, this.getPoint(u / this.width, v / this.height, d));
+            }
+        }
+        /*const points = distances.flatMap((d, i) => {
+            const u = offsetX + (i % childWidth) + 1;
+            const v = offsetY + Math.floor(i / childWidth);
+            return this.getPoint(u / this.width, v / this.height, d);
+        });*/
 
         return points;
     }
@@ -118,7 +132,7 @@ export class MeshBuilder {
     getColors(imageData) {
         return Array.from(imageData)
             //               [ discard alpha  ]  [  discard rgba groups where a = 0  ]
-            .filter((_, i) => (i + 1) % 4 != 0 && imageData[i + (4 - i % 4) - 1] != 0)
+            .filter((_, i) => (i + 1) % 4 != 0 /*&& imageData[i + (4 - i % 4) - 1] != 0*/)
             .map(c => c / 255);
     }
 

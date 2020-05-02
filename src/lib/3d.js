@@ -38,6 +38,8 @@ let meshes = [];
 let distancesEntry;
 /** @type {ImageEntry} */
 let colorsEntry;
+/** @type {ImageEntry[]} */
+let objectEntries = [];
 
 const scene = new THREE.Scene();
 const cameraR = new THREE.PerspectiveCamera(parseFloat(fovElm.value), meshBuilder.width / meshBuilder.height, 0.1, meshBuilder.size);
@@ -264,23 +266,15 @@ function updateScene() {
     cameraR.updateProjectionMatrix();
     cameraRHelper.update();
 
-    //for (const tableObject of tableObjects) {
-    //    /** @type {ImageEntry} */
-    //    const entry = datFile.groups[tableObject.group][tableObject.entry];
-    //    const objectPoints = getPoints(
-    //        entry.zBuffer,
-    //        entry.width,
-    //        entry.height,
-    //        entry.mp1 - 220,
-    //        entry.mp2 - 4,
-    //        meshBuilder.width,
-    //        meshBuilder.height);
-    //    const objectIndices = VertexBuilder.getVertexIndices(objectPoints, entry.width, entry.height);
-    //    const objectColors = VertexBuilder.getVertices(getColors(entry.imageData.data), objectIndices);
-    //    const objectVertices = VertexBuilder.getVertices(objectPoints, objectIndices);
-    //    Array.prototype.push.apply(colors, objectColors);
-    //    Array.prototype.push.apply(vertices, objectVertices);
-    //}
+    for (const entry of objectEntries) {
+        meshes.push(meshBuilder.buildMesh(
+            entry.zBuffer,
+            entry.imageData.data,
+            entry.mp1 - 220,
+            entry.mp2 - 4,
+            entry.width,
+            entry.height));
+    }
 
     for (const mesh of meshes) {
         scene.add(mesh);
@@ -353,6 +347,11 @@ fileElm.onchange = () => {
 
         distancesEntry = datFile.groups[212][14];
         colorsEntry = datFile.groups[212][3];
+        objectEntries = [];
+        for (const tableObject of tableObjects) {
+            /** @type {ImageEntry} */
+            objectEntries.push(datFile.groups[tableObject.group][tableObject.entry]);
+        }    
 
         meshBuilder.width = distancesEntry.width;
         meshBuilder.height = distancesEntry.height;
