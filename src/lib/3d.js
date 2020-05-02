@@ -2,8 +2,10 @@ import { DATPARTOUT } from './DATPARTOUT'
 import * as THREE from 'three';
 import * as VertexBuilder from './VertexBuilder'
 import { OrbitControls } from './OrbitControls';//'three/examples/jsm/controls/OrbitControls.js';
+import { ColladaExporter } from 'three/examples/jsm/exporters/ColladaExporter.js';
 import { ImageEntry } from './Entries/ImageEntry';
 import { ZBufferEntry } from './Entries/ZBufferEntry';
+import { saveString, saveArrayBuffer } from "./Saver";
 
 const fileElm = document.getElementById("file");
 const viewFovElm = document.getElementById("viewFov");
@@ -230,6 +232,15 @@ cameraElm.onchange = () => {
 };
 showHelperElm.onchange = () => cameraRHelper.visible = showHelperElm.checked;
 showRenderElm.onchange = () => renderer2.domElement.style.display = showRenderElm.checked ? 'block' : 'none';
+document.getElementById("export").onclick = () => {
+    const exporter = new ColladaExporter();
+    exporter.parse(mesh, result => {
+        saveString(result.data, "cadet.dae");
+        result.textures.forEach(tex => {
+            saveArrayBuffer(tex.data, `${tex.name}.${tex.ext}`);
+        });
+    });
+}
 
 /**
  * Converts the distances of a z Buffer to points in 3D space.
