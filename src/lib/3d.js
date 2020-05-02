@@ -5,7 +5,7 @@ import { ColladaExporter } from 'three/examples/jsm/exporters/ColladaExporter.js
 import { ImageEntry } from './Entries/ImageEntry';
 import { ZBufferEntry } from './Entries/ZBufferEntry';
 import { saveString, saveArrayBuffer } from "./Saver";
-import { getMesh } from './MeshBuilder';
+import { MeshBuilder } from './MeshBuilder';
 
 const fileElm = document.getElementById("file");
 const viewFovElm = document.getElementById("viewFov");
@@ -23,9 +23,14 @@ const SCREEN_WIDTH = window.innerWidth;
 const SCREEN_HEIGHT = window.innerHeight;
 const aspect = SCREEN_WIDTH / SCREEN_HEIGHT;
 const frustumSize = 600;
-let distancesWidth = 100;
-let distancesHeight = 100;
-const maxDist = 100;
+const meshBuilder = new MeshBuilder();
+meshBuilder.width = 100;
+meshBuilder.height = 100;
+meshBuilder.fov = parseFloat(fovElm.value);
+meshBuilder.minDistance = parseFloat(minZElm.value);
+meshBuilder.centerX = parseFloat(centerXElm.value);
+meshBuilder.centerY = parseFloat(centerYElm.value);
+meshBuilder.size = 100;
 
 /** @type {THREE.Mesh} */
 let mesh;
@@ -34,9 +39,8 @@ let distancesEntry;
 /** @type {ImageEntry} */
 let colorsEntry;
 
-
 const scene = new THREE.Scene();
-const cameraR = new THREE.PerspectiveCamera(parseFloat(fovElm.value), distancesWidth / distancesHeight, 0.1, maxDist);
+const cameraR = new THREE.PerspectiveCamera(parseFloat(fovElm.value), meshBuilder.width / meshBuilder.height, 0.1, meshBuilder.size);
 const cameraRHelper = new THREE.CameraHelper(cameraR);
 cameraRHelper.layers.disable(0);
 cameraRHelper.layers.enable(1);
@@ -55,7 +59,7 @@ renderer.domElement.style.position = 'absolute';
 renderer.domElement.style.zIndex = '-1';
 
 const renderer2 = new THREE.WebGLRenderer({ antialias: false });
-renderer2.setSize(distancesWidth, distancesHeight);
+renderer2.setSize(meshBuilder.width, meshBuilder.height);
 document.body.appendChild(renderer2.domElement);
 renderer2.domElement.style.position = 'absolute';
 renderer2.domElement.style.right = '0px';
@@ -81,7 +85,7 @@ scene.add(cameraRHelper);
 
 cameraR.lookAt(0, 0, 1);
 cameraR.updateMatrixWorld();
-controlsP.target = new THREE.Vector3(0, 0, maxDist / 2);
+controlsP.target = new THREE.Vector3(0, 0, meshBuilder.size / 2);
 cameraO.position.z = -1000;
 
 let activeCamera = cameraP;
@@ -122,11 +126,6 @@ function animate() {
     if (showRenderElm.checked)
         renderer2.render(scene, cameraR);
 }
-
-let fov = parseFloat(fovElm.value);
-let minZ = parseFloat(minZElm.value);
-let centerX = parseFloat(centerXElm.value);
-let centerY = parseFloat(centerYElm.value);
 
 renderer.domElement.addEventListener("keydown", e => {
     switch (e.keyCode) {
@@ -177,26 +176,27 @@ function deg(rad) {
 }
 
 fovElm.onchange = () => {
-    fov = parseFloat(fovElm.value);
+    const fov = parseFloat(fovElm.value);
+    meshBuilder.fov = fov;
     cameraR.fov = fov;
     cameraR.updateProjectionMatrix();
     cameraRHelper.update();
     updateScene();
-}
+};
 viewFovElm.onchange = () => {
     cameraP.fov = parseFloat(viewFovElm.value);
     cameraP.updateProjectionMatrix();
 };
 centerXElm.onchange = () => {
-    centerX = parseFloat(centerXElm.value);
+    meshBuilder.centerX = parseFloat(centerXElm.value);
     updateScene();
 };
 centerYElm.onchange = () => {
-    centerY = parseFloat(centerYElm.value);
+    meshBuilder.centerY = parseFloat(centerYElm.value);
     updateScene();
 };
 minZElm.onchange = () => {
-    minZ = parseFloat(minZElm.value);
+    meshBuilder.minDistance = parseFloat(minZElm.value);
     updateScene();
 };
 pSizeElm.onchange = () => {
@@ -238,25 +238,22 @@ document.getElementById("export").onclick = () => {
 document.getElementById("camReset").onclick = () => {
     controlsP.reset();
     controlsO.reset();
-    controlsP.target = new THREE.Vector3(0, 0, maxDist / 2);
+    controlsP.target = new THREE.Vector3(0, 0, meshBuilder.size / 2);
     controlsP.update();
     cameraO.position.z = -1000;
     raycastTarget(new THREE.Vector2(0, 0));
 };
 
-function updateScene(){
-    scene.remove(mesh);
-    mesh = getMesh(
-        distancesEntry.zBuffer,
-        colorsEntry.imageData.data,
-        distancesEntry.width,
-        distancesEntry.height,
-        fov,
-        maxDist,
-        minZ);
+function updateScene() {
+    if (mesh !== undefined) {
+        scene.remove(mesh);
+        mesh.material.dispose();
+        mesh.geometry.dispose();
+    }
+    mesh = meshBuilder.buildMesh(distancesEntry.zBuffer, colorsEntry.imageData.data);
 
-    renderer2.setSize(distancesWidth, distancesHeight);
-    cameraR.aspect = distancesWidth / distancesHeight;
+    renderer2.setSize(meshBuilder.width, meshBuilder.height);
+    cameraR.aspect = meshBuilder.width / meshBuilder.height;
     cameraR.updateProjectionMatrix();
     cameraRHelper.update();
 
@@ -269,8 +266,8 @@ function updateScene(){
     //        entry.height,
     //        entry.mp1 - 220,
     //        entry.mp2 - 4,
-    //        distancesWidth,
-    //        distancesHeight);
+    //        meshBuilder.width,
+    //        meshBuilder.height);
     //    const objectIndices = VertexBuilder.getVertexIndices(objectPoints, entry.width, entry.height);
     //    const objectColors = VertexBuilder.getVertices(getColors(entry.imageData.data), objectIndices);
     //    const objectVertices = VertexBuilder.getVertices(objectPoints, objectIndices);
@@ -348,8 +345,8 @@ fileElm.onchange = () => {
         distancesEntry = datFile.groups[212][14];
         colorsEntry = datFile.groups[212][3];
 
-        distancesWidth = distancesEntry.width;
-        distancesHeight = distancesEntry.height;
+        meshBuilder.width = distancesEntry.width;
+        meshBuilder.height = distancesEntry.height;
 
         updateScene();
 

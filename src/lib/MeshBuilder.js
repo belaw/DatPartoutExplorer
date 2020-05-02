@@ -1,104 +1,129 @@
 import * as THREE from 'three';
 import * as VertexBuilder from './VertexBuilder'
 
-/**
- * 
- * @param {number[]} zBuffer 
- * @param {number[]} colors 
- * @param {number} width 
- * @param {number} height 
- * @param {number} fov
- * @returns {THREE.Mesh}
- */
-export function getMesh(zBuffer, colors, width, height, fov, size, minZ) {
-    const geometry = new THREE.BufferGeometry();
-    const material = new THREE.MeshBasicMaterial({ vertexColors: true });
-    const mesh = new THREE.Mesh(geometry, material);
+export class MeshBuilder {
+    constructor() {
+        this.width = 100;
+        this.height = 100;
+        this.centerX = 0.5;
+        this.centerY = 0.5;
+        this.fov = 75;
+        this.size = 100;
+        this.minDistance = 0;
+    }
 
-    const points = getPoints(zBuffer, width, height, fov, size, minZ);
-    const vertexIndices = VertexBuilder.getVertexIndices(points, width, height);
-    const vertices = VertexBuilder.getVertices(points, vertexIndices);
-    const vertexColors = VertexBuilder.getVertices(getColors(colors), vertexIndices);
+    /**
+     * @param {number} value
+     */
+    set width(value) {
+        this.widthVal = value;
+        this.aspect = this.width / this.height;
+    }
 
-    geometry.setAttribute('position', new THREE.Float32BufferAttribute(new Float32Array(vertices), 3));
-    geometry.setAttribute('color', new THREE.Float32BufferAttribute(new Float32Array(vertexColors), 3));
-    geometry.attributes.position.needsUpdate = true;
-    geometry.attributes.color.needsUpdate = true;
-    geometry.setDrawRange(0, vertices.length);
+    get width() { return this.widthVal; }
 
-    return mesh;
-}
+    /**
+     * @param {number} value
+     */
+    set height(value) {
+        this.heightVal = value;
+        this.aspect = this.width / this.height;
+    }
 
-/**
- * Converts the distances of a z Buffer to points in 3D space.
- * @param {Number[]} distances Z Buffer.
- * @param {Number} width Width of Z Buffer.
- * @param {Number} height Height of Z Buffer.
- * @param {number} fov
- * @param {number} size
- * @param {Number} offsetX 
- * @param {Number} offsetY 
- * @param {Number} parentWidth 
- * @param {Number} parentHeight
- * @returns {Number[]} x, y, z, x, y, z, ...
- */
-function getPoints(
-    distances,
-    width,
-    height,
-    fov,
-    size,
-    minZ,
-    offsetX = 0,
-    offsetY = 0,
-    parentWidth = width,
-    parentHeight = height
-) {
-    const distancesAspect = parentWidth / parentHeight;
-    const fl = getFocalLength(fov);
+    get height() { return this.heightVal; }
 
-    const points = distances.flatMap((d, i) => {
-        const u = offsetX + (i % width) + 1;
-        const v = offsetY + Math.floor(i / width);
-        return getPoint(u / parentWidth, v / parentHeight, d, distancesAspect, fl, size, minZ);
-    });
+    /**
+     * @param {number} value
+     */
+    set fov(value) {
+        this.fovVal = value;
+        this.focalLength = this.getFocalLength(this.fov);
+    }
 
-    return points;
-}
+    get fov() { return this.fovVal; }
 
-/**
- * Converts UV Coordinates + Distance to a Point in 3D space.
- * @param {Number} u U Coordinate.
- * @param {Number} v V Coordinate.
- * @param {Number} d Distance.
- * @param {Number} a Aspect ratio.
- * @param {Number} fl Focal length.
- * @param {Number} s Size.
- * @returns {Number[]} x, y, z
- */
-function getPoint(u, v, d, a, fl, s, minZ) {
-    let x = (-u + 0.5) * a;
-    let y = -v + 0.5;
-    let z = fl;
+    /**
+     * 
+     * @param {number[]} zBuffer The distances.
+     * @param {number[]} colors The colors.
+     * @returns {THREE.Mesh} The mesh.
+     */
+    buildMesh(zBuffer, colors) {
+        const geometry = new THREE.BufferGeometry();
+        const material = new THREE.MeshBasicMaterial({ vertexColors: true });
+        const mesh = new THREE.Mesh(geometry, material);
 
-    const vLength = Math.sqrt((x * x) + (y * y) + (z * z));
+        const points = this.getPoints(zBuffer);
+        const vertexIndices = VertexBuilder.getVertexIndices(points, this.width, this.height);
+        const vertices = VertexBuilder.getVertices(points, vertexIndices);
+        const vertexColors = VertexBuilder.getVertices(this.getColors(colors), vertexIndices);
 
-    x /= vLength;
-    y /= vLength;
-    z /= vLength;
+        geometry.setAttribute('position', new THREE.Float32BufferAttribute(new Float32Array(vertices), 3));
+        geometry.setAttribute('color', new THREE.Float32BufferAttribute(new Float32Array(vertexColors), 3));
+        geometry.attributes.position.needsUpdate = true;
+        geometry.attributes.color.needsUpdate = true;
+        geometry.setDrawRange(0, vertices.length);
 
-    const dN = ((d * (1 - minZ) + 0xFFFF * minZ) / 0xFFFF) * s;
+        return mesh;
+    }
 
-    return [x * dN, y * dN, z * dN];
-}
+    /**
+     * Converts the distances of a z Buffer to points in 3D space.
+     * @param {Number[]} distances Z Buffer.
+     * @param {Number} offsetX 
+     * @param {Number} offsetY 
+     * @param {Number} parentWidth 
+     * @param {Number} parentHeight
+     * @returns {Number[]} x, y, z, x, y, z, ...
+     */
+    getPoints(
+        distances,
+        offsetX = 0,
+        offsetY = 0,
+        parentWidth = this.width,
+        parentHeight = this.height
+    ) {
+        const points = distances.flatMap((d, i) => {
+            const u = offsetX + (i % this.width) + 1;
+            const v = offsetY + Math.floor(i / this.width);
+            return this.getPoint(u / parentWidth, v / parentHeight, d);
+        });
 
-function getColors(imageData) {
-    return Array.from(imageData)
-        //               [ discard alpha  ]  [  discard rgba groups where a = 0  ]
-        .filter((_, i) => (i + 1) % 4 != 0 && imageData[i + (4 - i % 4) - 1] != 0)
-        .map(c => c / 255);
-}
+        return points;
+    }
 
-function getFocalLength(fov) {
-    return 0.5 / (Math.tan((fov / 2) * Math.PI / 180));
+    /**
+     * Converts UV Coordinates + Distance to a Point in 3D space.
+     * @param {Number} u U Coordinate.
+     * @param {Number} v V Coordinate.
+     * @param {Number} d Distance.
+     * @returns {Number[]} x, y, z
+     */
+    getPoint(u, v, d) {
+        let x = (-u + this.centerX) * this.aspect;
+        let y = -v + this.centerY;
+        let z = this.focalLength;
+
+        const vLength = Math.sqrt((x * x) + (y * y) + (z * z));
+
+        x /= vLength;
+        y /= vLength;
+        z /= vLength;
+
+        const dN = ((d * (1 - this.minDistance) + 0xFFFF * this.minDistance) / 0xFFFF) * this.size;
+
+        return [x * dN, y * dN, z * dN];
+    }
+
+    getColors(imageData) {
+        return Array.from(imageData)
+            //               [ discard alpha  ]  [  discard rgba groups where a = 0  ]
+            .filter((_, i) => (i + 1) % 4 != 0 && imageData[i + (4 - i % 4) - 1] != 0)
+            .map(c => c / 255);
+    }
+
+    /** @param {number} fov */
+    getFocalLength(fov) {
+        return 0.5 / (Math.tan((fov / 2) * Math.PI / 180));
+    }
 }
