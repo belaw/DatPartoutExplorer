@@ -6,6 +6,12 @@ import { ImageEntry } from './Entries/ImageEntry';
 import { ZBufferEntry } from './Entries/ZBufferEntry';
 import { saveString, saveArrayBuffer } from "./Saver";
 import { MeshBuilder } from './MeshBuilder';
+import px from "../img/px.png";
+import nx from "../img/nx.png";
+import py from "../img/py.png";
+import ny from "../img/ny.png";
+import pz from "../img/pz.png";
+import nz from "../img/nz.png";
 
 const fileElm = document.getElementById("file");
 const viewFovElm = document.getElementById("viewFov");
@@ -56,7 +62,7 @@ const cameraO = new THREE.OrthographicCamera(frustumSize * aspect / - 2, frustum
 cameraO.layers.enable(1);
 const raycaster = new THREE.Raycaster();
 
-scene.background = new THREE.Color(0.2, 0.1, 0);
+scene.background = new THREE.CubeTextureLoader().load([px, nx, py, ny, pz, nz]);
 
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(SCREEN_WIDTH, SCREEN_HEIGHT);
