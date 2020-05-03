@@ -19,6 +19,7 @@ const cameraElm = document.getElementById("camera");
 const showHelperElm = document.getElementById("showHelper");
 const showRenderElm = document.getElementById("showRender");
 const maxEdgeLengthElm = document.getElementById("maxEdgeLength");
+const wireframeElm = document.getElementById("wireframe");
 
 const SCREEN_WIDTH = window.innerWidth;
 const SCREEN_HEIGHT = window.innerHeight;
@@ -33,6 +34,7 @@ meshBuilder.centerX = parseFloat(centerXElm.value);
 meshBuilder.centerY = parseFloat(centerYElm.value);
 meshBuilder.size = 100;
 meshBuilder.maxEdgeLength = parseFloat(maxEdgeLengthElm.value);
+meshBuilder.wireframe = wireframeElm.checked;
 
 /** @type {THREE.Mesh[]} */
 let meshes = [];
@@ -245,6 +247,12 @@ document.getElementById("export").onclick = () => {
 maxEdgeLengthElm.onchange = () => {
     meshBuilder.maxEdgeLength = parseFloat(maxEdgeLengthElm.value);
     updateScene();
+};
+wireframeElm.onchange = () => {
+    meshBuilder.wireframe = wireframeElm.checked;
+    for (const mesh of meshes) {
+        mesh.material.wireframe = wireframeElm.checked;
+    }
 };
 
 document.getElementById("camReset").onclick = () => {
