@@ -1,19 +1,29 @@
 /**
- * @param {number[]} points
+ * @param {number[]} vertices
+ * @param {number} width
+ * @param {number} height
+ * @param {number} maxLength
  * @returns {number[]} vertex indices
  */
-export function getVertexIndices(points, width, height) {
+export function getVertexIndices(vertices, width, height, maxLength) {
     function p(x, y) {
         const i = (y * width + x) * 3;
 
-        if (points[i] === undefined) return undefined;
+        if (vertices[i] === undefined) return undefined;
 
         return {
-            x: points[i + 0],
-            y: points[i + 1],
-            z: points[i + 2],
+            x: vertices[i + 0],
+            y: vertices[i + 1],
+            z: vertices[i + 2],
             i: i
         };
+    }
+
+    function addTri(p1, p2, p3) {
+        if (length(p1, p2) > maxLength
+            || length(p2, p3) > maxLength
+            || length(p3, p1) > maxLength) return;
+        result.push(p1.i, p2.i, p3.i);
     }
 
     const result = [];
@@ -33,20 +43,20 @@ export function getVertexIndices(points, width, height) {
 
             if (missingCount == 0) {
                 if (length(c, br) > length(b, r)) {
-                    result.push(c.i, b.i, r.i);
-                    result.push(r.i, b.i, br.i);
+                    addTri(c, b, r);
+                    addTri(r, b, br);
                 } else {
-                    result.push(c.i, b.i, br.i);
-                    result.push(c.i, br.i, r.i);
+                    addTri(c, b, br);
+                    addTri(c, br, r);
                 }
             } else if (c === undefined) {
-                result.push(r.i, b.i, br.i);
+                addTri(r, b, br);
             } else if (r === undefined) {
-                result.push(c.i, b.i, br.i);
+                addTri(c, b, br);
             } else if (b === undefined) {
-                result.push(c.i, br.i, r.i);
+                addTri(c, br, r);
             } else if (br === undefined) {
-                result.push(c.i, b.i, r.i);
+                addTri(c, b, r);
             }
         }
     }

@@ -18,6 +18,7 @@ const sizeAttentuationElm = document.getElementById("sizeAttentuation");
 const cameraElm = document.getElementById("camera");
 const showHelperElm = document.getElementById("showHelper");
 const showRenderElm = document.getElementById("showRender");
+const maxEdgeLengthElm = document.getElementById("maxEdgeLength");
 
 const SCREEN_WIDTH = window.innerWidth;
 const SCREEN_HEIGHT = window.innerHeight;
@@ -31,6 +32,7 @@ meshBuilder.minDistance = parseFloat(minZElm.value);
 meshBuilder.centerX = parseFloat(centerXElm.value);
 meshBuilder.centerY = parseFloat(centerYElm.value);
 meshBuilder.size = 100;
+meshBuilder.maxEdgeLength = parseFloat(maxEdgeLengthElm.value);
 
 /** @type {THREE.Mesh[]} */
 let meshes = [];
@@ -239,7 +241,11 @@ document.getElementById("export").onclick = () => {
             saveArrayBuffer(tex.data, `${tex.name}.${tex.ext}`);
         });
     });
-}
+};
+maxEdgeLengthElm.onchange = () => {
+    meshBuilder.maxEdgeLength = parseFloat(maxEdgeLengthElm.value);
+    updateScene();
+};
 
 document.getElementById("camReset").onclick = () => {
     controlsP.reset();
@@ -351,7 +357,7 @@ fileElm.onchange = () => {
         for (const tableObject of tableObjects) {
             /** @type {ImageEntry} */
             objectEntries.push(datFile.groups[tableObject.group][tableObject.entry]);
-        }    
+        }
 
         meshBuilder.width = distancesEntry.width;
         meshBuilder.height = distancesEntry.height;

@@ -10,6 +10,8 @@ export class MeshBuilder {
         this.fov = 75;
         this.size = 100;
         this.minDistance = 0;
+        this.maxEdgeLength = 100;
+        this.wireframe = false;
     }
 
     /**
@@ -54,11 +56,11 @@ export class MeshBuilder {
      */
     buildMesh(zBuffer, colors, offsetX = 0, offsetY = 0, childWidth = this.width, childHeight = this.height) {
         const geometry = new THREE.BufferGeometry();
-        const material = new THREE.MeshBasicMaterial({ vertexColors: true });
+        const material = new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.DoubleSide, wireframe: this.wireframe });
         const mesh = new THREE.Mesh(geometry, material);
 
         const points = this.getPoints(zBuffer, offsetX, offsetY, childWidth);
-        const vertexIndices = VertexBuilder.getVertexIndices(points, childWidth, childHeight);
+        const vertexIndices = VertexBuilder.getVertexIndices(points, childWidth, childHeight, this.maxEdgeLength);
         const vertices = VertexBuilder.getVertices(points, vertexIndices);
         const vertexColors = VertexBuilder.getVertices(this.getColors(colors), vertexIndices);
 
