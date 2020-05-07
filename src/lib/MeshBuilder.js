@@ -60,9 +60,9 @@ export class MeshBuilder {
         const mesh = new THREE.Mesh(geometry, material);
 
         const points = this.getPoints(zBuffer, offsetX, offsetY, childWidth);
-        const vertexIndices = VertexBuilder.getVertexIndices(points, childWidth, childHeight, this.maxEdgeLength);
-        const vertices = VertexBuilder.getVertices(points, vertexIndices);
-        const vertexColors = VertexBuilder.getVertices(this.getColors(colors), vertexIndices);
+        const vertexIndices = VertexBuilder.getFaceVertexIndices(points, childWidth, childHeight, this.maxEdgeLength);
+        const vertices = VertexBuilder.getFaces(points, vertexIndices);
+        const vertexColors = VertexBuilder.getFaces(this.getColors(colors), vertexIndices);
 
         geometry.setAttribute('position', new THREE.Float32BufferAttribute(new Float32Array(vertices), 3));
         geometry.setAttribute('color', new THREE.Float32BufferAttribute(new Float32Array(vertexColors), 3));

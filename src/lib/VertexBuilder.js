@@ -1,20 +1,20 @@
 /**
- * @param {number[]} vertices
+ * @param {number[]} points
  * @param {number} width
  * @param {number} height
  * @param {number} maxLength
  * @returns {number[]} vertex indices
  */
-export function getVertexIndices(vertices, width, height, maxLength) {
+export function getFaceVertexIndices(points, width, height, maxLength) {
     function p(x, y) {
         const i = (y * width + x) * 3;
 
-        if (vertices[i] === undefined) return undefined;
+        if (points[i] === undefined) return undefined;
 
         return {
-            x: vertices[i + 0],
-            y: vertices[i + 1],
-            z: vertices[i + 2],
+            x: points[i + 0],
+            y: points[i + 1],
+            z: points[i + 2],
             i: i
         };
     }
@@ -64,7 +64,7 @@ export function getVertexIndices(vertices, width, height, maxLength) {
     return result;
 }
 
-export function getVertices(points, indices) {
+export function getFaces(points, indices) {
     const result = [];
     for (const i of indices) {
         result.push(
