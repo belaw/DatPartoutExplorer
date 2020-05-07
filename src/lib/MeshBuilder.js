@@ -99,11 +99,6 @@ export class MeshBuilder {
                 Array.prototype.push.apply(points, this.getPoint(u / this.width, v / this.height, d));
             }
         }
-        /*const points = distances.flatMap((d, i) => {
-            const u = offsetX + (i % childWidth) + 1;
-            const v = offsetY + Math.floor(i / childWidth);
-            return this.getPoint(u / this.width, v / this.height, d);
-        });*/
 
         return points;
     }
