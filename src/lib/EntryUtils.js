@@ -38,30 +38,71 @@ function paletteImgFromEntry(entry) {
     return canvas;
 }
 
+const colors = [
+    //"#000000",
+    //"#000080",
+    //"#0000FF",
+    //"#008000",
+    //"#008080",
+    "#0080FF",
+    "#00FF00",
+    "#00FF80",
+    "#00FFFF",
+    //"#800000",
+    //"#800080",
+    "#8000FF",
+    //"#808000",
+    //"#808080",
+    "#8080FF",
+    "#80FF00",
+    "#80FF80",
+    "#80FFFF",
+    "#FF0000",
+    "#FF0080",
+    "#FF00FF",
+    "#FF8000",
+    "#FF8080",
+    "#FF80FF",
+    "#FFFF00",
+    "#FFFF80"
+    //"#FFFFFF",
+];
+let colorCounter = 0;
+
 /**
  * @param {FloatTableEntry} entry 
  */
-function collisionBoxImgFromEntry(entry) {
-    const canvas = document.createElement("canvas");
+function collisionBoxImgFromEntry(canvas, entry, counter) {
     const ctx = canvas.getContext("2d");
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
     const coords = entry.table.slice(2, 2 + entry.table[1] * 2);
-    const scale = 25;
-    const size = (coords.map(c => Math.abs(c)).reduce((p, c) => c > p ? c : p) * 2 * scale) + 10;
-    canvas.width = size;
-    canvas.height = size;
+    const scale = 50;
     ctx.translate(canvas.width / 2, canvas.height / 2);
+    ctx.fillStyle = colors[colorCounter % colors.length];
+    ctx.fillText(counter, -coords[0] * scale, coords[1] * scale);
     ctx.scale(-1, 1);
-    ctx.strokeStyle = "#FFFFFF";
+    ctx.strokeStyle = colors[colorCounter % colors.length];
     ctx.lineWidth = 1;
-    ctx.moveTo(coords[0] * scale, coords[1] * scale);
+
+    for (let i = 0; i < coords.length - 1; i += 2) {
+        ctx.beginPath();
+        ctx.arc(coords[i] * scale, coords[i + 1] * scale, 1.5, 0, 2 * Math.PI);
+        ctx.closePath();
+        ctx.fill();
+    }
+
     ctx.beginPath();
-    for (let i = 2; i < coords.length - 1; i += 2) {
-        ctx.lineTo(coords[i] * scale, coords[i + 1] * scale);
+    if (entry.table[1] == 1) {
+        ctx.arc(entry.table[2] * scale, entry.table[3] * scale, entry.table[4] * scale, 0, 2 * Math.PI);
+    } else {
+        ctx.moveTo(coords[0] * scale, coords[1] * scale);
+        for (let i = 2; i < coords.length - 1; i += 2) {
+            ctx.lineTo(coords[i] * scale, coords[i + 1] * scale);
+        }
     }
     ctx.closePath();
     ctx.stroke();
-
-    return canvas;
+    colorCounter++;
 }
 
 /**

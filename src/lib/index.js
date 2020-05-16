@@ -20,6 +20,15 @@ function makeDAT(file) {
     var elmContainer = "ul";
     var elmItem = "li";
     var groupListElm = document.createElement(elmContainer);
+    var collisionElm = document.createElement("canvas");
+    collisionElm.style.border = "1px solid white";
+    collisionElm.width = (30 + 2) * 50;
+    collisionElm.height = (30 + 2) * 50;
+    var ctx = collisionElm.getContext("2d");
+    //ctx.fillStyle = "black";
+    //ctx.fillRect(0, 0, collisionElm.width, collisionElm.height);
+    document.body.appendChild(collisionElm);
+    let collisionCounter = 1;
 
     for (var groupID = 0; groupID < file.groups.length; groupID++) {
         var group = file.groups[groupID];
@@ -69,10 +78,10 @@ function makeDAT(file) {
             } else if (entry instanceof FloatTableEntry) {
                 createElement(elmItem, dataListElm, `Elements: ${entry.table.length}`);
                 createElement(elmItem, dataListElm, entry.table.join(", "));
-                if (entry.table[0] == 600 || entry.table[0] == 1300) {
-                    const x = EntryUtils.collisionBoxImgFromEntry(entry);
-                    x.style.border = "1px solid white";
-                    dataListElm.appendChild(x);
+                if (entry.table[0] == 600 /*|| entry.table[0] == 1300*/) {
+                    createElement(elmItem, dataListElm, `collisionCounter: ${collisionCounter}`);
+                    EntryUtils.collisionBoxImgFromEntry(collisionElm, entry, collisionCounter);
+                    collisionCounter++;
                 }
             } else if (entry instanceof IntTableEntry) {
                 createElement(elmItem, dataListElm, `Elements: ${entry.table.length}`);
