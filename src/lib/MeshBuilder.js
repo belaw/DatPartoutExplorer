@@ -59,16 +59,19 @@ export class MeshBuilder {
         const material = new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.DoubleSide, wireframe: this.wireframe });
         const mesh = new THREE.Mesh(geometry, material);
 
-        const points = this.getPoints(zBuffer, offsetX, offsetY, childWidth);
-        const vertexIndices = VertexBuilder.getFaceVertexIndices(points, childWidth, childHeight, this.maxEdgeLength);
-        const vertices = VertexBuilder.getFaces(points, vertexIndices);
-        const vertexColors = VertexBuilder.getFaces(this.getColors(colors), vertexIndices);
+        const vertices = this.getPoints(zBuffer, offsetX, offsetY, childWidth);
+        const faces = VertexBuilder.getFaceVertexIndices(vertices, childWidth, childHeight, this.maxEdgeLength);
+        const vertexColors = this.getColors(colors);
 
-        geometry.setAttribute('position', new THREE.Float32BufferAttribute(new Float32Array(vertices), 3));
-        geometry.setAttribute('color', new THREE.Float32BufferAttribute(new Float32Array(vertexColors), 3));
-        geometry.attributes.position.needsUpdate = true;
-        geometry.attributes.color.needsUpdate = true;
-        geometry.setDrawRange(0, vertices.length);
+        for (const i in vertices) {
+            if (vertices[i] === undefined) {
+                vertices[i] = 0;
+            }
+        }
+
+        geometry.setIndex(faces);
+        geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+        geometry.setAttribute('color', new THREE.Float32BufferAttribute(vertexColors, 3));
 
         return mesh;
     }

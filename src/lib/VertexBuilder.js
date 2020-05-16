@@ -23,9 +23,10 @@ export function getFaceVertexIndices(points, width, height, maxLength) {
         if (length(p1, p2) > maxLength
             || length(p2, p3) > maxLength
             || length(p3, p1) > maxLength) return;
-        result.push(p1.i, p2.i, p3.i);
+        result.push(p1.i / 3, p2.i / 3, p3.i / 3);
     }
 
+    /** @type {number[]} */
     const result = [];
 
     for (let y = 0; y < height - 1; y++) {
@@ -61,18 +62,6 @@ export function getFaceVertexIndices(points, width, height, maxLength) {
         }
     }
 
-    return result;
-}
-
-export function getFaces(points, indices) {
-    const result = [];
-    for (const i of indices) {
-        result.push(
-            points[i],
-            points[i + 1],
-            points[i + 2]
-        );
-    }
     return result;
 }
 
