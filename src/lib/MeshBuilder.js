@@ -77,6 +77,36 @@ export class MeshBuilder {
     }
 
     /**
+     * 
+     * @param {number[]} zBuffer The distances.
+     * @param {number[]} colors The colors.
+     * @param {number} [offsetX]
+     * @param {number} [offsetY]
+     * @param {number} [childWidth]
+     * @param {number} [childHeight]
+     * @returns {THREE.Points} The points.
+     */
+    buildPoints(zBuffer, colors, offsetX = 0, offsetY = 0, childWidth = this.width, childHeight = this.height) {
+        const geometry = new THREE.BufferGeometry();
+        const material = new THREE.PointsMaterial({ vertexColors: true });
+        const mesh = new THREE.Points(geometry, material);
+
+        const vertices = this.getVertices(zBuffer, offsetX, offsetY, childWidth);
+        const vertexColors = this.getColors(colors);
+
+        for (const i in vertices) {
+            if (vertices[i] === undefined) {
+                vertices[i] = 0;
+            }
+        }
+
+        geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+        geometry.setAttribute('color', new THREE.Float32BufferAttribute(vertexColors, 3));
+
+        return mesh;
+    }
+
+    /**
      * Converts the distances of a z Buffer to points in 3D space.
      * The optional parameters can be provided if the distances cover a smaller area within the bounds of the MeshBuilder (width x height).
      * @param {Number[]} distances Z Buffer.
