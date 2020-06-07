@@ -59,7 +59,7 @@ export class MeshBuilder {
         const material = new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.DoubleSide, wireframe: this.wireframe });
         const mesh = new THREE.Mesh(geometry, material);
 
-        const vertices = this.getPoints(zBuffer, offsetX, offsetY, childWidth);
+        const vertices = this.getVertices(zBuffer, offsetX, offsetY, childWidth);
         const faces = VertexBuilder.getFaceVertexIndices(vertices, childWidth, childHeight, this.maxEdgeLength);
         const vertexColors = this.getColors(colors);
 
@@ -85,25 +85,25 @@ export class MeshBuilder {
      * @param {Number} [childWidth]
      * @returns {Number[]} x, y, z, x, y, z, ...
      */
-    getPoints(
+    getVertices(
         distances,
         offsetX = 0,
         offsetY = 0,
         childWidth = this.width
     ) {
-        const points = [];
+        const vertices = [];
         for (let i = 0; i < distances.length; i++) {
             const d = distances[i];
             if (d === undefined) {
-                points.push(undefined, undefined, undefined);
+                vertices.push(undefined, undefined, undefined);
             } else {
                 const u = offsetX + (i % childWidth) + 1;
                 const v = offsetY + Math.floor(i / childWidth);
-                Array.prototype.push.apply(points, this.getPoint(u / this.width, v / this.height, d));
+                Array.prototype.push.apply(vertices, this.getVertex(u / this.width, v / this.height, d));
             }
         }
 
-        return points;
+        return vertices;
     }
 
     /**
@@ -113,7 +113,7 @@ export class MeshBuilder {
      * @param {Number} d Distance.
      * @returns {Number[]} x, y, z
      */
-    getPoint(u, v, d) {
+    getVertex(u, v, d) {
         let x = (-u + this.centerX) * this.aspect;
         let y = -v + this.centerY;
         let z = this.focalLength;
