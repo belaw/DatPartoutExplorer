@@ -7,7 +7,7 @@
     "lib": "lib"
   },
   "dependencies": {
-    "three": "^0.115.0"
+    "three": "^0.125.0"
   },
   "devDependencies": {
     "gh-pages": "^2.2.0",
