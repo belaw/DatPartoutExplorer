@@ -1,17 +1,17 @@
 import { DATPARTOUT } from './DATPARTOUT'
 import * as THREE from 'three';
 import { OrbitControls } from './OrbitControls';//'three/examples/jsm/controls/OrbitControls.js';
-import { ColladaExporter } from 'three/examples/jsm/exporters/ColladaExporter.js';
+import { ColladaExporter } from 'url:three/examples/jsm/exporters/ColladaExporter.js';
 import { ImageEntry } from './Entries/ImageEntry';
 import { ZBufferEntry } from './Entries/ZBufferEntry';
 import { saveString, saveArrayBuffer } from "./Saver";
 import { MeshBuilder } from './MeshBuilder';
-import px from "../img/px.png";
-import nx from "../img/nx.png";
-import py from "../img/py.png";
-import ny from "../img/ny.png";
-import pz from "../img/pz.png";
-import nz from "../img/nz.png";
+import px from "url:../img/px.png";
+import nx from "url:../img/nx.png";
+import py from "url:../img/py.png";
+import ny from "url:../img/ny.png";
+import pz from "url:../img/pz.png";
+import nz from "url:../img/nz.png";
 
 const fileElm = document.getElementById("file");
 const viewFovElm = document.getElementById("viewFov");
