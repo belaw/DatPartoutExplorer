@@ -2,7 +2,7 @@ const link = document.createElement('a');
 link.style.display = 'none';
 document.body.appendChild(link); // Firefox workaround, see #6594
 
-function save(blob, filename) {
+export function save(blob, filename) {
 
     link.href = URL.createObjectURL(blob);
     link.download = filename;

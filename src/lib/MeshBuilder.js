@@ -12,6 +12,8 @@ export class MeshBuilder {
         this.minDistance = 0;
         this.maxEdgeLength = 100;
         this.wireframe = false;
+        /** @type {THREE.Texture[]} */
+        this.textureCache = [];
     }
 
     /**
@@ -47,21 +49,47 @@ export class MeshBuilder {
     /**
      * 
      * @param {number[]} zBuffer The distances.
-     * @param {number[]} colors The colors.
+     * @param {ImageData} textureImageData The texture.
      * @param {number} [offsetX]
      * @param {number} [offsetY]
      * @param {number} [childWidth]
      * @param {number} [childHeight]
      * @returns {THREE.Mesh} The mesh.
      */
-    buildMesh(zBuffer, colors, offsetX = 0, offsetY = 0, childWidth = this.width, childHeight = this.height) {
+    buildMesh(zBuffer, textureImageData, offsetX = 0, offsetY = 0, childWidth = this.width, childHeight = this.height) {
+        // Exporter can't work with ImageData textures so I convert it to an HTMLImageElement
+        const canvas = document.createElement("canvas");
+        canvas.width = textureImageData.width;
+        canvas.height = textureImageData.height;
+        canvas.getContext("2d").putImageData(textureImageData, 0, 0);
+        const image = document.createElement("img");
+        image.src = canvas.toDataURL("image/png");
+
+        const texture = new THREE.Texture(image);
+        this.textureCache.push(texture);
+        texture.minFilter = THREE.LinearFilter;
+        texture.needsUpdate = true;
         const geometry = new THREE.BufferGeometry();
-        const material = new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.DoubleSide, wireframe: this.wireframe });
+        const material = new THREE.MeshStandardMaterial({
+        //const material = new THREE.MeshBasicMaterial({
+            side: THREE.DoubleSide,
+            wireframe: this.wireframe,
+            map: texture,
+            flatShading: false,
+            //reflectivity: 0,
+            metalness: 0
+        });
         const mesh = new THREE.Mesh(geometry, material);
 
         const vertices = this.getVertices(zBuffer, offsetX, offsetY, childWidth);
         const faces = VertexBuilder.getFaceVertexIndices(vertices, childWidth, childHeight, this.maxEdgeLength);
-        const vertexColors = this.getColors(colors);
+        const uvs = [];
+        for (let i = 0; i < vertices.length / 3; i++) {
+            const u = ((i % textureImageData.width) + 0.5) / textureImageData.width;
+            const v = 1 - ((Math.floor(i / textureImageData.width) + 0.5) / textureImageData.height);
+            uvs.push(u, v);
+        }
+        // const vertexColors = this.getColors(colors);
 
         for (const i in vertices) {
             if (vertices[i] === undefined) {
@@ -71,7 +99,8 @@ export class MeshBuilder {
 
         geometry.setIndex(faces);
         geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
-        geometry.setAttribute('color', new THREE.Float32BufferAttribute(vertexColors, 3));
+        geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+        // geometry.setAttribute('color', new THREE.Float32BufferAttribute(vertexColors, 3));
 
         return mesh;
     }
@@ -169,5 +198,12 @@ export class MeshBuilder {
     /** @param {number} fov */
     getFocalLength(fov) {
         return 0.5 / (Math.tan((fov / 2) * Math.PI / 180));
+    }
+
+    clearTextureCache() {
+        for (const i in this.textureCache) {
+            this.textureCache[i].dispose();
+        }
+        this.textureCache = [];
     }
 }
