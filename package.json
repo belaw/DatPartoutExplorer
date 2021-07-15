@@ -24,7 +24,7 @@
   "scripts": {
     "dev": "webpack serve --mode=development",
     "build": "webpack --mode=production",
-    "predeploy": "del /S /Q dist && parcel build src/index.html --public-url /DatPartoutExplorer",
+    "predeploy": "del /S /Q dist\\lib && webpack --mode=production",
     "deploy": "gh-pages -d dist"
   },
   "repository": "git+https://github.com/belaw/DatPartoutExplorer.git",
