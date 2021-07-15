@@ -153,39 +153,39 @@ function animate() {
 
 renderer.domElement.addEventListener("keydown", e => {
     switch (e.code) {
-        case 97: // Numpad 1
+        case 'Numpad1': // Numpad 1
             activeControls.setPolarAngle(rad(90));
             activeControls.setAzimuthalAngle(rad(180));
             break;
 
-        case 103: // Numpad 7
+        case 'Numpad7': // Numpad 7
             activeControls.setPolarAngle(rad(0));
             activeControls.setAzimuthalAngle(rad(180));
             break;
 
-        case 99: // Numpad 3
+        case 'Numpad3': // Numpad 3
             activeControls.setPolarAngle(rad(90));
             activeControls.setAzimuthalAngle(rad(90));
             break;
 
-        case 105: // Numpad 9
+        case 'Numpad9': // Numpad 9
             activeControls.setPolarAngle(Math.PI - activeControls.getPolarAngle());
             activeControls.setAzimuthalAngle(activeControls.getAzimuthalAngle() - rad(180));
             break;
 
-        case 100: // numpad 4
+        case 'Numpad4': // numpad 4
             activeControls.setAzimuthalAngle(rad(deg(activeControls.getAzimuthalAngle()) - 0.1));
             break;
 
-        case 102: // Numpad 6
+        case 'Numpad6': // Numpad 6
             activeControls.setAzimuthalAngle(rad(deg(activeControls.getAzimuthalAngle()) + 0.1));
             break;
 
-        case 104: // Numpad 8
+        case 'Numpad8': // Numpad 8
             activeControls.setPolarAngle(rad(deg(activeControls.getPolarAngle()) - 0.1));
             break;
 
-        case 98: // Numpad 2
+        case 'Numpad2': // Numpad 2
             activeControls.setPolarAngle(rad(deg(activeControls.getPolarAngle()) + 0.1));
             break;
     }
@@ -258,9 +258,9 @@ document.getElementById("export").onclick = () => {
     const exporter = new ColladaExporter();
     exporter.parse(scene, result => {
         zip.file("cadet.dae", result.data);
-        result.textures.forEach(tex => {
+        for (const tex of result.textures) {
             zip.file(`textures/${tex.name}.${tex.ext}`, tex.data);
-        });
+        }
         zip.generateAsync({ compression: "STORE", type: "blob" }).then(blob => save(blob, "cadet.zip"));
     }, { textureDirectory: "textures" });
 };

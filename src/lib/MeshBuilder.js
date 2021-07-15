@@ -70,14 +70,14 @@ export class MeshBuilder {
         texture.minFilter = THREE.LinearFilter;
         texture.needsUpdate = true;
         const geometry = new THREE.BufferGeometry();
-        const material = new THREE.MeshStandardMaterial({
-        //const material = new THREE.MeshBasicMaterial({
+        //const material = new THREE.MeshStandardMaterial({
+        const material = new THREE.MeshBasicMaterial({
             side: THREE.DoubleSide,
             wireframe: this.wireframe,
             map: texture,
-            flatShading: false,
+            //flatShading: false,
             //reflectivity: 0,
-            metalness: 0
+            //metalness: 0
         });
         const mesh = new THREE.Mesh(geometry, material);
 
@@ -189,7 +189,7 @@ export class MeshBuilder {
     }
 
     getColors(imageData) {
-        return Array.from(imageData)
+        return Array.from(imageData.data)
             //               [ discard alpha  ]  [  discard rgba groups where a = 0  ]
             .filter((_, i) => (i + 1) % 4 != 0 /*&& imageData[i + (4 - i % 4) - 1] != 0*/)
             .map(c => c / 255);
