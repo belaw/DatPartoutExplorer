@@ -2,28 +2,32 @@
   "name": "datpartout",
   "version": "1.0.0",
   "description": "Parses the PARTOUT(4.0)RESOURCE file format used by Maxis/Cinematronics in Full Tilt Pinball and displays the contents.",
-  "main": "index.js",
+  "private": true,
   "directories": {
     "lib": "lib"
   },
   "dependencies": {
-    "three": "^0.115.0"
+    "jszip": "*",
+    "three": "^0.130.1"
   },
   "devDependencies": {
-    "gh-pages": "^2.2.0",
-    "@parcel/transformer-image": "^2.0.0-beta.2",
-    "parcel": "*"
+    "css-loader": "^5.2.7",
+    "extract-loader": "^5.1.0",
+    "file-loader": "^6.2.0",
+    "gh-pages": "^3.0.0",
+    "html-loader": "^2.1.2",
+    "style-loader": "^3.1.0",
+    "webpack": "^5.44.0",
+    "webpack-cli": "^4.7.2",
+    "webpack-dev-server": "^3.11.2"
   },
   "scripts": {
-    "dev": "parcel src/index.html",
-    "build": "parcel build src/index.html",
+    "dev": "webpack serve --mode=development",
+    "build": "webpack --mode=production",
     "predeploy": "del /S /Q dist && parcel build src/index.html --public-url /DatPartoutExplorer",
     "deploy": "gh-pages -d dist"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/belaw/DatPartoutExplorer.git"
-  },
+  "repository": "git+https://github.com/belaw/DatPartoutExplorer.git",
   "author": "Jonas Witting",
   "license": "MIT",
   "bugs": {
