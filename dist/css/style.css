@@ -1,0 +1,49 @@
+body {
+	background-color: #181818;
+	color: #d8d8d8;
+}
+
+* {
+	font-family: monospace;
+}
+
+.container {
+	color: #d8d8d8;
+	background-color: #282828;
+	border: solid 1px #383838;
+	display: inline-flex;
+	margin: 1px;
+	padding: 5px;
+}
+
+.col {
+	display: inline-block;
+}
+
+.colorSquare {
+	width: 5px;
+	height: 5px;
+	margin: 0;
+}
+
+.squareGroup {
+	display: inline-block;
+}
+
+hr {
+	border: 0;
+	height: 1px;
+	background-color: #383838;
+}
+
+a:link {
+	color: #7cafc2;
+}
+
+a:active {
+	color: #ab4642;
+}
+
+a:visited {
+	color: #ba8baf;
+}
