@@ -14,6 +14,7 @@ import ny from "url:../img/ny.png";
 import pz from "url:../img/pz.png";
 import nz from "url:../img/nz.png";*/
 import JSZip from 'jszip';
+import { degToRad } from 'three/src/math/MathUtils';
 
 const fileElm = document.getElementById("file");
 const viewFovElm = document.getElementById("viewFov");
@@ -21,8 +22,10 @@ const fovElm = document.getElementById("fov");
 const centerXElm = document.getElementById("centerX");
 const centerYElm = document.getElementById("centerY");
 const minZElm = document.getElementById("minZ");
+const rotationElm = document.getElementById("rotation");
 const pSizeElm = document.getElementById("pSize");
 const sizeAttentuationElm = document.getElementById("sizeAttentuation");
+const outputModeElm = document.getElementById("outputMode");
 const cameraElm = document.getElementById("camera");
 const showHelperElm = document.getElementById("showHelper");
 const showRenderElm = document.getElementById("showRender");
@@ -43,6 +46,8 @@ meshBuilder.centerY = parseFloat(centerYElm.value);
 meshBuilder.size = 100;
 meshBuilder.maxEdgeLength = parseFloat(maxEdgeLengthElm.value);
 meshBuilder.wireframe = wireframeElm.checked;
+
+let build = meshBuilder.buildPoints.bind(meshBuilder);
 
 /** @type {THREE.Mesh[]} */
 let meshes = [];
@@ -199,6 +204,33 @@ function deg(rad) {
     return rad * (180 / Math.PI);
 }
 
+function updatePointSize() {
+    if (outputModeElm.value !== 'pointCloud')
+        return;
+    const size = parseFloat(pSizeElm.value);
+    for (const mesh of meshes) {
+        mesh.material.size = size;
+    }
+}
+
+function updateOutputMode() {
+    switch (outputModeElm.value) {
+        case 'pointCloud':
+            build = meshBuilder.buildPoints.bind(meshBuilder);
+            sizeAttentuationElm.disabled = false;
+            pSizeElm.disabled = false;
+            maxEdgeLengthElm.disabled = true;
+            break;
+        case 'mesh':
+            build = meshBuilder.buildMesh.bind(meshBuilder);
+            sizeAttentuationElm.disabled = true;
+            pSizeElm.disabled = true;
+            maxEdgeLengthElm.disabled = false;
+            break;
+        default: break;
+    }
+}
+
 fovElm.onchange = () => {
     const fov = parseFloat(fovElm.value);
     meshBuilder.fov = fov;
@@ -224,16 +256,29 @@ minZElm.onchange = () => {
     updateScene();
 };
 pSizeElm.onchange = () => {
-    for (const mesh of meshes) {
-        mesh.material.size = parseFloat(pSizeElm.value);
-    }
+    updatePointSize();
 };
+rotationElm.onchange = () => {
+    const angle = degToRad(parseFloat(rotationElm.value));
+    cameraR.rotation.x = angle;
+    for (const mesh of meshes) {
+        mesh.rotation.x = angle;
+    }
+    cameraR.updateProjectionMatrix();
+    cameraRHelper.update();
+}
 sizeAttentuationElm.onchange = () => {
     for (const mesh of meshes) {
         mesh.material.sizeAttenuation = sizeAttentuationElm.checked;
         mesh.material.needsUpdate = true;
     }
 };
+
+outputModeElm.onchange = () => {
+    updateOutputMode();
+    updateScene();
+};
+
 cameraElm.onchange = () => {
     switch (cameraElm.value) {
         case 'p':
@@ -294,8 +339,7 @@ function updateScene() {
     }
     meshBuilder.clearTextureCache();
     meshes = [];
-    // meshes.push(meshBuilder.buildMesh(distancesEntry.zBuffer, colorsEntry.imageData));
-    meshes.push(meshBuilder.buildPoints(distancesEntry.zBuffer, colorsEntry.imageData));
+    meshes.push(build(distancesEntry.zBuffer, colorsEntry.imageData));
 
     renderer2.setSize(meshBuilder.width, meshBuilder.height);
     cameraR.aspect = meshBuilder.width / meshBuilder.height;
@@ -304,7 +348,7 @@ function updateScene() {
 
     for (const oe of objectEntries) {
         // const m = meshBuilder.buildMesh(
-        const m = meshBuilder.buildPoints(
+        const m = build(
             oe.entry.zBuffer,
             oe.entry.imageData,
             oe.entry.mp1 - 220,
@@ -314,6 +358,8 @@ function updateScene() {
         m.name = oe.name;
         meshes.push(m);
     }
+
+    updatePointSize();
 
     for (const mesh of meshes) {
         scene.add(mesh);
@@ -647,4 +693,5 @@ fileElm.onchange = () => {
     };
 };
 
+updateOutputMode();
 animate();

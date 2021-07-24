@@ -16,35 +16,8 @@ module.exports = {
     compress: true,
     port: 9000,
     hot: true,
+    writeToDisk: true
   },
-  /*plugins: [new HtmlWebpackPlugin({
-    template: './src/3d.html',
-    filename: '3d.html',
-  })],*/
-  /*module: {
-    rules: [
-      {
-        test: /\.html$/,
-        type: 'asset/resource',
-        generator: {
-          filename: '[name][ext]',
-        },
-      },
-      {
-        test: /\.html$/i,
-        use: ['extract-loader', {
-          loader: 'html-loader',
-          options: {
-            esModule: false
-          }
-        }],
-      },
-      {
-        test: /\.css$/i,
-        use: ['style-loader', 'css-loader'],
-      },
-    ],
-  },*/
   output: {
     filename: '[name].js',
     path: path.resolve(__dirname, 'dist/lib'),
