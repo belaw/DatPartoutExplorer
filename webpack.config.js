@@ -7,6 +7,9 @@ module.exports = {
     index: './src/index.js',
     imgs: './src/imgs.js',
   },
+  externals: {
+    THREE: 'three'
+  },
   devtool: 'inline-source-map',
   devServer: {
     contentBase: './dist',
