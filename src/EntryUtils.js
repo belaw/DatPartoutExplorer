@@ -72,7 +72,7 @@ let colorCounter = 0;
 /**
  * @param {FloatTableEntry} entry 
  */
-function collisionBoxImgFromEntry(canvas, entry, counter) {
+function addCollisionBox(canvas, entry, counter) {
     const ctx = canvas.getContext("2d");
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     const coords = entry.table.slice(2, 2 + entry.table[1] * 2);
@@ -106,6 +106,73 @@ function collisionBoxImgFromEntry(canvas, entry, counter) {
 }
 
 /**
+ * @param {FloatTableEntry} entry 
+ */
+function collisionBoxImgFromEntry(entry) {
+    const canvas = document.createElement("canvas");
+    const scale = 50;
+    const margin = 5;
+
+    let minX = Number.POSITIVE_INFINITY;
+    let maxX = Number.NEGATIVE_INFINITY;
+    let minY = Number.POSITIVE_INFINITY;
+    let maxY = Number.NEGATIVE_INFINITY;
+
+    const coords = entry.table.slice(2, 2 + entry.table[1] * 2);
+
+    if (entry.table[1] == 1) {
+        const radius = entry.table[4];
+        minX = entry.table[2] - radius;
+        maxX = entry.table[2] + radius;
+        minY = entry.table[3] - radius;
+        maxY = entry.table[3] + radius;
+    } else {
+        for (let i = 0; i < coords.length; i += 2) {
+            if (coords[i] < minX) minX = coords[i];
+            if (coords[i] > maxX) maxX = coords[i];
+            if (coords[i + 1] < minY) minY = coords[i + 1];
+            if (coords[i + 1] > maxY) maxY = coords[i + 1];
+        }
+    }
+
+    const width = Math.ceil((maxX - minX) * scale);
+    const height = Math.ceil((maxY - minY) * scale);
+
+    canvas.width = width + margin * 2;
+    canvas.height = height + margin * 2;
+
+    const ctx = canvas.getContext("2d");
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+
+    ctx.translate((canvas.width / 2) + (minX * scale) + (width / 2), (canvas.height / 2) - (minY * scale) - (height / 2));
+    ctx.scale(-1, 1);
+    ctx.strokeStyle = "#FFFFFF";
+    ctx.fillStyle = "#FFFFFF";
+    ctx.lineWidth = 1;
+
+    for (let i = 0; i < coords.length - 1; i += 2) {
+        ctx.beginPath();
+        ctx.arc(coords[i] * scale, coords[i + 1] * scale, 1.5, 0, 2 * Math.PI);
+        ctx.closePath();
+        ctx.fill();
+    }
+
+    ctx.beginPath();
+    if (entry.table[1] == 1) {
+        ctx.arc(entry.table[2] * scale, entry.table[3] * scale, entry.table[4] * scale, 0, 2 * Math.PI);
+    } else {
+        ctx.moveTo(coords[0] * scale, coords[1] * scale);
+        for (let i = 2; i < coords.length - 1; i += 2) {
+            ctx.lineTo(coords[i] * scale, coords[i + 1] * scale);
+        }
+    }
+    ctx.closePath();
+    ctx.stroke();
+
+    return canvas;
+}
+
+/**
  * @param {PaletteEntry} entry
  */
 function paletteFromEntry(entry) {
@@ -132,4 +199,4 @@ function paletteFromEntry(entry) {
     return canvas;
 }
 
-export { paletteFromEntry, paletteImgFromEntry, zBufferImgFromEntry, collisionBoxImgFromEntry };
+export { paletteFromEntry, paletteImgFromEntry, zBufferImgFromEntry, addCollisionBox, collisionBoxImgFromEntry };

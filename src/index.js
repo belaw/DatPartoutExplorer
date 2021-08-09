@@ -80,7 +80,10 @@ function makeDAT(file) {
                 createElement(elmItem, dataListElm, entry.table.join(", "));
                 if (entry.table[0] == 600 /*|| entry.table[0] == 1300*/) {
                     createElement(elmItem, dataListElm, `collisionCounter: ${collisionCounter}`);
-                    EntryUtils.collisionBoxImgFromEntry(collisionElm, entry, collisionCounter);
+                    EntryUtils.addCollisionBox(collisionElm, entry, collisionCounter);
+                    const cBoxImg = EntryUtils.collisionBoxImgFromEntry(entry);
+                    const elm = createElement(elmItem, dataListElm, "");
+                    elm.appendChild(cBoxImg);
                     collisionCounter++;
                 }
             } else if (entry instanceof IntTableEntry) {
