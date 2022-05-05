@@ -15,10 +15,14 @@ const _PI_2 = Math.PI / 2;
 
 class PointerLockControls extends EventDispatcher {
 
+	
+
 	/** @param {THREE.Camera} camera */
 	constructor( camera, domElement ) {
 
 		super();
+
+		this.sensitivity = 1;
 
 		if ( domElement === undefined ) {
 
@@ -46,8 +50,8 @@ class PointerLockControls extends EventDispatcher {
 
 			_euler.setFromQuaternion( camera.quaternion );
 
-			_euler.y -= movementX * 0.002;
-			_euler.x -= movementY * 0.002;
+			_euler.y -= movementX * (scope.sensitivity * 0.002);
+			_euler.x -= movementY * (scope.sensitivity * 0.002);
 
 			_euler.x = Math.max( _PI_2 - scope.maxPolarAngle, Math.min( _PI_2 - scope.minPolarAngle, _euler.x ) );
 

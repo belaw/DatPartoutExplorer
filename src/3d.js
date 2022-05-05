@@ -147,6 +147,7 @@ renderer.domElement.addEventListener("wheel", event => {
     /*const fovDelta = fov - oldFov;
     fov = oldFov - fovDelta;*/
     fov = Math.max(0.1, Math.min(fov, 179));
+    controlsP.sensitivity = fov / 60.5;
     viewFovElm.value = fov;
     setFov(fov);
 });
