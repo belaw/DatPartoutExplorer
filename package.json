@@ -28,5 +28,6 @@
   "bugs": {
     "url": "https://github.com/belaw/DatPartoutExplorer/issues"
   },
-  "homepage": "https://belaw.github.io/DatPartoutExplorer"
+  "homepage": "https://belaw.github.io/DatPartoutExplorer",
+  "packageManager": "yarn@3.1.1"
 }
