@@ -68,7 +68,6 @@ export class MeshBuilder {
 
         const texture = new THREE.Texture(image);
         this.textureCache.push(texture);
-        texture.minFilter = THREE.LinearFilter;
         texture.needsUpdate = true;
         const geometry = new THREE.BufferGeometry();
         const wireframeMaterial = new THREE.MeshBasicMaterial({color: 0x0A0A0A, wireframe: true, transparent: true, visible: this.wireframe});
@@ -83,21 +82,17 @@ export class MeshBuilder {
         const mesh = SceneUtils.createMultiMaterialObject( geometry, [wireframeMaterial, material] );
         //const mesh = new THREE.Mesh(geometry, material);
 
-        const vertices = this.getVertices(zBuffer, offsetX, offsetY, childWidth);
+        let vertices = this.getVertices(zBuffer, offsetX, offsetY, childWidth);
         const faces = VertexBuilder.getFaceVertexIndices(vertices, childWidth, childHeight, this.maxEdgeLength);
+        vertices = vertices.filter(v => v !== undefined);
         const uvs = [];
-        for (let i = 0; i < vertices.length / 3; i++) {
+        for (let i = 0; i < zBuffer.length; i++) {
+            if(zBuffer[i] === undefined) continue;
             const u = ((i % textureImageData.width) + 0.5) / textureImageData.width;
             const v = 1 - ((Math.floor(i / textureImageData.width) + 0.5) / textureImageData.height);
             uvs.push(u, v);
         }
         // const vertexColors = this.getColors(colors);
-
-        for (const i in vertices) {
-            if (vertices[i] === undefined) {
-                vertices[i] = 0;
-            }
-        }
 
         geometry.setIndex(faces);
         geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
@@ -122,14 +117,8 @@ export class MeshBuilder {
         const material = new THREE.PointsMaterial({ vertexColors: true });
         const mesh = new THREE.Points(geometry, material);
 
-        const vertices = this.getVertices(zBuffer, offsetX, offsetY, childWidth);
+        const vertices = this.getVertices(zBuffer, offsetX, offsetY, childWidth).filter(v => v !== undefined);
         const vertexColors = this.getColors(colors);
-
-        for (const i in vertices) {
-            if (vertices[i] === undefined) {
-                vertices[i] = 0;
-            }
-        }
 
         geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
         geometry.setAttribute('color', new THREE.Float32BufferAttribute(vertexColors, 3));
@@ -193,7 +182,7 @@ export class MeshBuilder {
     getColors(imageData) {
         return Array.from(imageData.data)
             //               [ discard alpha  ]  [  discard rgba groups where a = 0  ]
-            .filter((_, i) => (i + 1) % 4 != 0 /*&& imageData[i + (4 - i % 4) - 1] != 0*/)
+            .filter((_, i) => (i + 1) % 4 !== 0 && imageData.data[i + (4 - i % 4) - 1] !== 0)
             .map(c => c / 255);
     }
 

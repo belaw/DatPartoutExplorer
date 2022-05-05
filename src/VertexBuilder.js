@@ -8,6 +8,7 @@
 export function getFaceVertexIndices(points, width, height, maxLength) {
     /** @type {number[]} */
     const result = [];
+    const indexMap = [];
 
     function p(x, y) {
         const i = (y * width + x) * 3;
@@ -26,21 +27,26 @@ export function getFaceVertexIndices(points, width, height, maxLength) {
         if (length(p1, p2) > maxLength
             || length(p2, p3) > maxLength
             || length(p3, p1) > maxLength) return;
-        result.push(p1.i / 3, p2.i / 3, p3.i / 3);
+        result.push(indexMap[p1.i] / 3, indexMap[p2.i] / 3, indexMap[p3.i] / 3);
+    }
+
+    for (let i = 0, j = 0; i < points.length; i++) {
+        indexMap[i] = j;
+        if (points[i] !== undefined) j++;
     }
 
     for (let y = 0; y < height - 1; y++) {
         for (let x = 0; x < width - 1; x++) {
             // center, right, bottom, bottom right
-            const points = [p(x, y), p(x + 1, y), p(x, y + 1), p(x + 1, y + 1)];
-            const missingCount = points.map(p => p === undefined ? 1 : 0).reduce((a, b) => a + b);
+            const neighbourhood = [p(x, y), p(x + 1, y), p(x, y + 1), p(x + 1, y + 1)];
+            const missingCount = neighbourhood.map(p => p === undefined ? 1 : 0).reduce((a, b) => a + b);
 
             if (missingCount > 1) continue;
 
-            const c = points[0];
-            const r = points[1];
-            const b = points[2];
-            const br = points[3];
+            const c = neighbourhood[0];
+            const r = neighbourhood[1];
+            const b = neighbourhood[2];
+            const br = neighbourhood[3];
 
             if (missingCount == 0) {
                 if (length(c, br) > length(b, r)) {
