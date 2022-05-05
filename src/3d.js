@@ -351,12 +351,14 @@ function updateOutputMode() {
             sizeAttentuationElm.disabled = false;
             pSizeElm.disabled = false;
             maxEdgeLengthElm.disabled = true;
+            wireframeElm.disabled = true;
             break;
         case 'mesh':
             build = meshBuilder.buildMesh.bind(meshBuilder);
             sizeAttentuationElm.disabled = true;
             pSizeElm.disabled = true;
             maxEdgeLengthElm.disabled = false;
+            wireframeElm.disabled = false;
             break;
         default: break;
     }
