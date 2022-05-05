@@ -452,8 +452,10 @@ maxEdgeLengthElm.onchange = () => {
 };
 wireframeElm.onchange = () => {
     meshBuilder.wireframe = wireframeElm.checked;
+    if(outputModeElm.value == "pointCloud") return;
     for (const mesh of meshes) {
-        mesh.material.wireframe = wireframeElm.checked;
+        mesh.children[0].visible = wireframeElm.checked;
+        mesh.children[0].material.visible = wireframeElm.checked;
     }
 };
 
@@ -472,8 +474,15 @@ function updateScene() {
     for (const mesh of meshes) {
         if (mesh !== undefined) {
             scene.remove(mesh);
-            mesh.material.dispose();
-            mesh.geometry.dispose();
+            if(mesh.type === "Group") {
+                 for (const c of mesh.children) {
+                     c.material.dispose();
+                     c.geometry.dispose();
+                 }
+            } else {
+                mesh.material.dispose();
+                mesh.geometry.dispose();
+            }
         }
     }
     meshBuilder.clearTextureCache();

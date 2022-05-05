@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import * as VertexBuilder from './VertexBuilder'
+import {SceneUtils} from 'three/examples/jsm/utils/SceneUtils.js'
 
 export class MeshBuilder {
     constructor() {
@@ -70,16 +71,17 @@ export class MeshBuilder {
         texture.minFilter = THREE.LinearFilter;
         texture.needsUpdate = true;
         const geometry = new THREE.BufferGeometry();
+        const wireframeMaterial = new THREE.MeshBasicMaterial({color: 0x0A0A0A, wireframe: true, transparent: true, visible: this.wireframe});
         //const material = new THREE.MeshStandardMaterial({
         const material = new THREE.MeshBasicMaterial({
             side: THREE.DoubleSide,
-            wireframe: this.wireframe,
-            map: texture,
+            map: texture
             //flatShading: false,
             //reflectivity: 0,
             //metalness: 0
         });
-        const mesh = new THREE.Mesh(geometry, material);
+        const mesh = SceneUtils.createMultiMaterialObject( geometry, [wireframeMaterial, material] );
+        //const mesh = new THREE.Mesh(geometry, material);
 
         const vertices = this.getVertices(zBuffer, offsetX, offsetY, childWidth);
         const faces = VertexBuilder.getFaceVertexIndices(vertices, childWidth, childHeight, this.maxEdgeLength);
