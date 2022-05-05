@@ -1,0 +1,57 @@
+Resource Identifiers
+100 state
+
+200 Used for soundwaves (references 202), collision data, the ball, lights, sinks, oneways, ...
+202 Label or file reference
+
+300 MATERIAL
+301 friction ?
+302 bouncyness ?
+
+400 kicker?
+401
+402 Kicker Force
+403
+404
+405
+406 A_SOUND Record
+
+600 collision data
+
+1000 polygon collision box
+1001 plunger
+1002 light
+1003 left flipper
+1004 right flipper
+1005 bumper
+1006 flag target (the yellow ones)
+1007 drain
+1008 <not used in cadet>
+1009 <not used in cadet>
+1010 circle collision box
+1011 drain block
+1012 "kout" (black hole and hyperspace ball lock things)
+1013 kick gate
+1014 kick
+1015 roll over (the lane things, the fuel lights)
+1016 one-way barrier
+1017 sink (worm hole)
+1018 flag (spinny boi)
+1019 button target (the red ones)
+1020 green space roll over
+1021 elevated platform? s_ramp9, ramp
+1022 hole (ramp hole)
+1023 demo
+1024 tripwire (entry point lights)
+1025 table objects list
+1026 light group
+1027 group reference list
+1028 bumper group
+1029 gravity well (middle red light)
+1030 roll over group (fuel_bargraph / fuel lights)
+1031 soundwave
+1032 <not used in cadet>
+1033 text box
+
+1100 sound reference
+1101 sound reference
