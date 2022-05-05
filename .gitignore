@@ -4,3 +4,4 @@
 /.parcel-cache
 /yarn.lock
 /dist/lib
+/dist/

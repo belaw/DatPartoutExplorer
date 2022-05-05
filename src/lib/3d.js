@@ -8,12 +8,12 @@ import { ImageEntry } from './Entries/ImageEntry';
 import { ZBufferEntry } from './Entries/ZBufferEntry';
 import { save, saveArrayBuffer, saveString } from "./Saver";
 import { MeshBuilder } from './MeshBuilder';
-/*import px from "url:../img/px.png";
-import nx from "url:../img/nx.png";
-import py from "url:../img/py.png";
-import ny from "url:../img/ny.png";
-import pz from "url:../img/pz.png";
-import nz from "url:../img/nz.png";*/
+import px from "../img/px.png";
+import nx from "../img/nx.png";
+import py from "../img/py.png";
+import ny from "../img/ny.png";
+import pz from "../img/pz.png";
+import nz from "../img/nz.png";
 import JSZip from 'jszip';
 import { degToRad } from 'three/src/math/MathUtils';
 
@@ -71,14 +71,7 @@ const cameraO = new THREE.OrthographicCamera(frustumSize * aspect / - 2, frustum
 cameraO.layers.enable(1);
 const raycaster = new THREE.Raycaster();
 
-const bgtex = new THREE.CubeTextureLoader().load([
-    '../img/px.png',
-    '../img/nx.png',
-    '../img/py.png',
-    '../img/ny.png',
-    '../img/pz.png',
-    '../img/nz.png'
-]);
+const bgtex = new THREE.CubeTextureLoader().load([px,nx,py,ny,pz,nz]);
 bgtex.minFilter = THREE.LinearFilter;
 scene.background = bgtex;
 //scene.background = new THREE.Color("black");
