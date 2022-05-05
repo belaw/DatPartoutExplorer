@@ -2,6 +2,7 @@ import { DATPARTOUT } from './DATPARTOUT'
 import * as THREE from 'three';
 import { OrbitControls } from './OrbitControls';//'three/examples/jsm/controls/OrbitControls.js';
 import { ColladaExporter } from 'three/examples/jsm/exporters/ColladaExporter.js';
+import { PointerLockControls } from './PointerLockControls';//'three/examples/jsm/controls/PointerLockControls';
 // import { GLTFExporter } from 'three/examples/jsm/exporters/GLTFExporter.js';
 import { ImageEntry } from './Entries/ImageEntry';
 import { ZBufferEntry } from './Entries/ZBufferEntry';
@@ -65,6 +66,7 @@ cameraRHelper.layers.disable(0);
 cameraRHelper.layers.enable(1);
 const cameraP = new THREE.PerspectiveCamera(parseFloat(viewFovElm.value), aspect, 0.1, 2000);
 cameraP.layers.enable(1);
+cameraP.rotateY(degToRad(180));
 const cameraO = new THREE.OrthographicCamera(frustumSize * aspect / - 2, frustumSize * aspect / 2, frustumSize / 2, frustumSize / - 2, 0.1, 2000);
 cameraO.layers.enable(1);
 const raycaster = new THREE.Raycaster();
@@ -94,7 +96,7 @@ renderer2.domElement.style.position = 'absolute';
 renderer2.domElement.style.right = '0px';
 renderer2.domElement.style.display = showRenderElm.checked ? 'block' : 'none';
 
-const controlsP = new OrbitControls(cameraP, renderer.domElement);
+/*const controlsP = new OrbitControls(cameraP, renderer.domElement);
 controlsP.enableDamping = false;
 controlsP.zoomSpeed = 0.5;
 controlsP.rotateSpeed = 1;
@@ -108,19 +110,46 @@ controlsO.zoomSpeed = 0.5;
 controlsO.rotateSpeed = 0.1;
 controlsO.screenSpacePanning = true;
 controlsO.panSpeed = 5;
+controlsO.enabled = false;*/
+
+const controlsP = new PointerLockControls(cameraP, renderer.domElement);
+
+const controlsO = new OrbitControls(cameraO, renderer.domElement);
+controlsO.enableDamping = false;
+controlsO.zoomSpeed = 0.5;
+controlsO.rotateSpeed = 0.1;
+controlsO.screenSpacePanning = true;
+controlsO.panSpeed = 5;
 controlsO.enabled = false;
 
 scene.add(cameraRHelper);
 
 cameraR.lookAt(0, 0, 1);
 cameraR.updateMatrixWorld();
-controlsP.target = new THREE.Vector3(0, 0, meshBuilder.size / 2);
+// controlsP.target = new THREE.Vector3(0, 0, meshBuilder.size / 2);
+renderer.domElement.addEventListener("click", () => {
+    if (activeControls === controlsO) return;
+    controlsP.isLocked ? controlsP.unlock() : controlsP.lock()
+});
+scene.add(controlsP.getObject());
 cameraO.position.z = -1000;
 
 let activeCamera = cameraP;
 let activeControls = controlsP;
 const mouse = new THREE.Vector2();
 
+renderer.domElement.addEventListener("wheel", event => {
+    if (activeControls !== controlsP) return;
+    const zoomingIn = event.deltaY > 0;
+    const oldFov = parseFloat(viewFovElm.value);
+    //let fov = zoomingIn ? oldFov + 1 : oldFov - 1;
+    let fov = zoomingIn ? oldFov * 1.1 : oldFov / 1.1;
+    /*const fovDelta = fov - oldFov;
+    fov = oldFov - fovDelta;*/
+    fov = Math.max(0.1, Math.min(fov, 179));
+    viewFovElm.value = fov;
+    setFov(fov);
+});
 renderer.domElement.addEventListener("mousemove", event => {
     event.preventDefault();
 
@@ -147,16 +176,117 @@ window.addEventListener("resize", e => {
     renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
+let moveForward = false;
+let moveBackward = false;
+let moveLeft = false;
+let moveRight = false;
+let fastSpeed = false;
+let prevTime = performance.now();
+const direction = new THREE.Vector3();
+const velocity = new THREE.Vector3();
+
+const onKeyDown = function (event) {
+
+    switch (event.code) {
+
+        case 'ArrowUp':
+        case 'KeyW':
+            moveForward = true;
+            break;
+
+        case 'ArrowLeft':
+        case 'KeyA':
+            moveLeft = true;
+            break;
+
+        case 'ArrowDown':
+        case 'KeyS':
+            moveBackward = true;
+            break;
+
+        case 'ArrowRight':
+        case 'KeyD':
+            moveRight = true;
+            break;
+
+        case 'ShiftLeft':
+            fastSpeed = true;
+            break;
+    }
+
+};
+
+const onKeyUp = function (event) {
+
+    switch (event.code) {
+
+        case 'ArrowUp':
+        case 'KeyW':
+            moveForward = false;
+            break;
+
+        case 'ArrowLeft':
+        case 'KeyA':
+            moveLeft = false;
+            break;
+
+        case 'ArrowDown':
+        case 'KeyS':
+            moveBackward = false;
+            break;
+
+        case 'ArrowRight':
+        case 'KeyD':
+            moveRight = false;
+            break;
+
+        case 'ShiftLeft':
+            fastSpeed = false;
+            break;
+    }
+
+};
+
+document.addEventListener('keydown', onKeyDown);
+document.addEventListener('keyup', onKeyUp);
+
 function animate() {
     requestAnimationFrame(animate);
-    controlsP.update();
+    // controlsP.update();
     controlsO.update();
+
+    const time = performance.now();
+    if (controlsP.isLocked === true) {
+        const delta = (time - prevTime) / 1000;
+
+        velocity.x -= velocity.x * 10.0 * delta;
+        velocity.y -= velocity.y * 10.0 * delta;
+        velocity.z -= velocity.z * 10.0 * delta;
+
+        direction.z = Number(moveForward) - Number(moveBackward);
+        direction.x = Number(moveRight) - Number(moveLeft);
+        direction.normalize(); // this ensures consistent movements in all directions
+
+        const speed = fastSpeed ? 400 : 100;
+
+        if (moveForward || moveBackward) velocity.z -= direction.z * speed * delta;
+        if (moveLeft || moveRight) velocity.x -= direction.x * speed * delta;
+
+        controlsP.moveRight(- velocity.x * delta);
+        controlsP.moveForward(- velocity.z * delta);
+
+        controlsP.getObject().position.y += (velocity.y * delta); // new behavior
+    }
+
+    prevTime = time;
+
     renderer.render(scene, activeCamera);
     if (showRenderElm.checked)
         renderer2.render(scene, cameraR);
 }
 
 renderer.domElement.addEventListener("keydown", e => {
+    if (activeControls !== controlsO) return;
     switch (e.code) {
         case 'Numpad1': // Numpad 1
             activeControls.setPolarAngle(rad(90));
@@ -231,6 +361,11 @@ function updateOutputMode() {
     }
 }
 
+function setFov(fov) {
+    cameraP.fov = fov;
+    cameraP.updateProjectionMatrix();
+}
+
 fovElm.onchange = () => {
     const fov = parseFloat(fovElm.value);
     meshBuilder.fov = fov;
@@ -240,8 +375,7 @@ fovElm.onchange = () => {
     updateScene();
 };
 viewFovElm.onchange = () => {
-    cameraP.fov = parseFloat(viewFovElm.value);
-    cameraP.updateProjectionMatrix();
+    setFov(parseFloat(viewFovElm.value));
 };
 centerXElm.onchange = () => {
     meshBuilder.centerX = parseFloat(centerXElm.value);
@@ -321,10 +455,12 @@ wireframeElm.onchange = () => {
 };
 
 document.getElementById("camReset").onclick = () => {
-    controlsP.reset();
+    // controlsP.reset();
+    cameraP.position.set(0, 0, 0);
+    cameraP.rotation.set(0, degToRad(180), 0);
     controlsO.reset();
-    controlsP.target = new THREE.Vector3(0, 0, meshBuilder.size / 2);
-    controlsP.update();
+    // controlsP.target = new THREE.Vector3(0, 0, meshBuilder.size / 2);
+    // controlsP.update();
     cameraO.position.z = -1000;
     raycastTarget(new THREE.Vector2(0, 0));
 };
@@ -369,14 +505,14 @@ function updateScene() {
 const tableObjects = [
     { name: "lite1", group: 234, entry: 3 },
     { name: "lite2", group: 235, entry: 3 },
-    { name: "lite2_1", group: 236, entry: 3 },
-    { name: "lite2_2", group: 237, entry: 3 },
+    // { name: "lite2_1", group: 236, entry: 3 },
+    // { name: "lite2_2", group: 237, entry: 3 },
     { name: "lite3", group: 238, entry: 3 },
-    { name: "lite3_1", group: 239, entry: 3 },
-    { name: "lite3_2", group: 240, entry: 3 },
+    // { name: "lite3_1", group: 239, entry: 3 },
+    // { name: "lite3_2", group: 240, entry: 3 },
     { name: "lite4", group: 241, entry: 3 },
-    { name: "lite4_1", group: 242, entry: 3 },
-    { name: "lite4_2", group: 243, entry: 3 },
+    // { name: "lite4_1", group: 242, entry: 3 },
+    // { name: "lite4_2", group: 243, entry: 3 },
     { name: "lite5", group: 244, entry: 3 },
     { name: "lite6", group: 245, entry: 3 },
     { name: "lite7", group: 246, entry: 3 },
@@ -513,77 +649,77 @@ const tableObjects = [
     { name: "literoll183", group: 378, entry: 3 },
     { name: "literoll184", group: 379, entry: 3 },
     { name: "a_flip1", group: 474, entry: 3 },
-    { name: "a_flip1_1", group: 475, entry: 3 },
-    { name: "a_flip1_2", group: 476, entry: 3 },
-    { name: "a_flip1_3", group: 477, entry: 3 },
-    { name: "a_flip1_4", group: 478, entry: 3 },
-    { name: "a_flip1_5", group: 479, entry: 3 },
-    { name: "a_flip1_6", group: 480, entry: 3 },
-    { name: "a_flip1_7", group: 481, entry: 3 },
+    // { name: "a_flip1_1", group: 475, entry: 3 },
+    // { name: "a_flip1_2", group: 476, entry: 3 },
+    // { name: "a_flip1_3", group: 477, entry: 3 },
+    // { name: "a_flip1_4", group: 478, entry: 3 },
+    // { name: "a_flip1_5", group: 479, entry: 3 },
+    // { name: "a_flip1_6", group: 480, entry: 3 },
+    // { name: "a_flip1_7", group: 481, entry: 3 },
     { name: "a_flip2", group: 482, entry: 3 },
-    { name: "a_flip2_1", group: 483, entry: 3 },
-    { name: "a_flip2_2", group: 484, entry: 3 },
-    { name: "a_flip2_3", group: 485, entry: 3 },
-    { name: "a_flip2_4", group: 486, entry: 3 },
-    { name: "a_flip2_5", group: 487, entry: 3 },
-    { name: "a_flip2_6", group: 488, entry: 3 },
-    { name: "a_flip2_7", group: 489, entry: 3 },
+    // { name: "a_flip2_1", group: 483, entry: 3 },
+    // { name: "a_flip2_2", group: 484, entry: 3 },
+    // { name: "a_flip2_3", group: 485, entry: 3 },
+    // { name: "a_flip2_4", group: 486, entry: 3 },
+    // { name: "a_flip2_5", group: 487, entry: 3 },
+    // { name: "a_flip2_6", group: 488, entry: 3 },
+    // { name: "a_flip2_7", group: 489, entry: 3 },
     { name: "a_bump1", group: 491, entry: 3 },
-    { name: "a_bump1_1", group: 492, entry: 3 },
-    { name: "a_bump1_2", group: 493, entry: 3 },
-    { name: "a_bump1_3", group: 494, entry: 3 },
-    { name: "a_bump1_4", group: 495, entry: 3 },
-    { name: "a_bump1_5", group: 496, entry: 3 },
-    { name: "a_bump1_6", group: 497, entry: 3 },
-    { name: "a_bump1_7", group: 498, entry: 3 },
+    // { name: "a_bump1_1", group: 492, entry: 3 },
+    // { name: "a_bump1_2", group: 493, entry: 3 },
+    // { name: "a_bump1_3", group: 494, entry: 3 },
+    // { name: "a_bump1_4", group: 495, entry: 3 },
+    // { name: "a_bump1_5", group: 496, entry: 3 },
+    // { name: "a_bump1_6", group: 497, entry: 3 },
+    // { name: "a_bump1_7", group: 498, entry: 3 },
     { name: "a_bump2", group: 499, entry: 3 },
-    { name: "a_bump2_1", group: 500, entry: 3 },
-    { name: "a_bump2_2", group: 501, entry: 3 },
-    { name: "a_bump2_3", group: 502, entry: 3 },
-    { name: "a_bump2_4", group: 503, entry: 3 },
-    { name: "a_bump2_5", group: 504, entry: 3 },
-    { name: "a_bump2_6", group: 505, entry: 3 },
-    { name: "a_bump2_7", group: 506, entry: 3 },
+    // { name: "a_bump2_1", group: 500, entry: 3 },
+    // { name: "a_bump2_2", group: 501, entry: 3 },
+    // { name: "a_bump2_3", group: 502, entry: 3 },
+    // { name: "a_bump2_4", group: 503, entry: 3 },
+    // { name: "a_bump2_5", group: 504, entry: 3 },
+    // { name: "a_bump2_6", group: 505, entry: 3 },
+    // { name: "a_bump2_7", group: 506, entry: 3 },
     { name: "a_bump3", group: 507, entry: 3 },
-    { name: "a_bump3_1", group: 508, entry: 3 },
-    { name: "a_bump3_2", group: 509, entry: 3 },
-    { name: "a_bump3_3", group: 510, entry: 3 },
-    { name: "a_bump3_4", group: 511, entry: 3 },
-    { name: "a_bump3_5", group: 512, entry: 3 },
-    { name: "a_bump3_6", group: 513, entry: 3 },
-    { name: "a_bump3_7", group: 514, entry: 3 },
+    // { name: "a_bump3_1", group: 508, entry: 3 },
+    // { name: "a_bump3_2", group: 509, entry: 3 },
+    // { name: "a_bump3_3", group: 510, entry: 3 },
+    // { name: "a_bump3_4", group: 511, entry: 3 },
+    // { name: "a_bump3_5", group: 512, entry: 3 },
+    // { name: "a_bump3_6", group: 513, entry: 3 },
+    // { name: "a_bump3_7", group: 514, entry: 3 },
     { name: "a_bump4", group: 515, entry: 3 },
-    { name: "a_bump4_1", group: 516, entry: 3 },
-    { name: "a_bump4_2", group: 517, entry: 3 },
-    { name: "a_bump4_3", group: 518, entry: 3 },
-    { name: "a_bump4_4", group: 519, entry: 3 },
-    { name: "a_bump4_5", group: 520, entry: 3 },
-    { name: "a_bump4_6", group: 521, entry: 3 },
-    { name: "a_bump4_7", group: 522, entry: 3 },
+    // { name: "a_bump4_1", group: 516, entry: 3 },
+    // { name: "a_bump4_2", group: 517, entry: 3 },
+    // { name: "a_bump4_3", group: 518, entry: 3 },
+    // { name: "a_bump4_4", group: 519, entry: 3 },
+    // { name: "a_bump4_5", group: 520, entry: 3 },
+    // { name: "a_bump4_6", group: 521, entry: 3 },
+    // { name: "a_bump4_7", group: 522, entry: 3 },
     { name: "a_bump5", group: 524, entry: 3 },
-    { name: "a_bump5_1", group: 525, entry: 3 },
-    { name: "a_bump5_2", group: 526, entry: 3 },
-    { name: "a_bump5_3", group: 527, entry: 3 },
-    { name: "a_bump5_4", group: 528, entry: 3 },
-    { name: "a_bump5_5", group: 529, entry: 3 },
-    { name: "a_bump5_6", group: 530, entry: 3 },
-    { name: "a_bump5_7", group: 531, entry: 3 },
+    // { name: "a_bump5_1", group: 525, entry: 3 },
+    // { name: "a_bump5_2", group: 526, entry: 3 },
+    // { name: "a_bump5_3", group: 527, entry: 3 },
+    // { name: "a_bump5_4", group: 528, entry: 3 },
+    // { name: "a_bump5_5", group: 529, entry: 3 },
+    // { name: "a_bump5_6", group: 530, entry: 3 },
+    // { name: "a_bump5_7", group: 531, entry: 3 },
     { name: "a_bump6", group: 532, entry: 3 },
-    { name: "a_bump6_1", group: 533, entry: 3 },
-    { name: "a_bump6_2", group: 534, entry: 3 },
-    { name: "a_bump6_3", group: 535, entry: 3 },
-    { name: "a_bump6_4", group: 536, entry: 3 },
-    { name: "a_bump6_5", group: 537, entry: 3 },
-    { name: "a_bump6_6", group: 538, entry: 3 },
-    { name: "a_bump6_7", group: 539, entry: 3 },
+    // { name: "a_bump6_1", group: 533, entry: 3 },
+    // { name: "a_bump6_2", group: 534, entry: 3 },
+    // { name: "a_bump6_3", group: 535, entry: 3 },
+    // { name: "a_bump6_4", group: 536, entry: 3 },
+    // { name: "a_bump6_5", group: 537, entry: 3 },
+    // { name: "a_bump6_6", group: 538, entry: 3 },
+    // { name: "a_bump6_7", group: 539, entry: 3 },
     { name: "a_bump7", group: 540, entry: 3 },
-    { name: "a_bump7_1", group: 541, entry: 3 },
-    { name: "a_bump7_2", group: 542, entry: 3 },
-    { name: "a_bump7_3", group: 543, entry: 3 },
-    { name: "a_bump7_4", group: 544, entry: 3 },
-    { name: "a_bump7_5", group: 545, entry: 3 },
-    { name: "a_bump7_6", group: 546, entry: 3 },
-    { name: "a_bump7_7", group: 547, entry: 3 },
+    // { name: "a_bump7_1", group: 541, entry: 3 },
+    // { name: "a_bump7_2", group: 542, entry: 3 },
+    // { name: "a_bump7_3", group: 543, entry: 3 },
+    // { name: "a_bump7_4", group: 544, entry: 3 },
+    // { name: "a_bump7_5", group: 545, entry: 3 },
+    // { name: "a_bump7_6", group: 546, entry: 3 },
+    // { name: "a_bump7_7", group: 547, entry: 3 },
     { name: "a_targ1", group: 551, entry: 3 },
     { name: "a_targ2", group: 552, entry: 3 },
     { name: "a_targ3", group: 553, entry: 3 },
@@ -594,66 +730,66 @@ const tableObjects = [
     { name: "a_targ8", group: 558, entry: 3 },
     { name: "a_targ9", group: 559, entry: 3 },
     { name: "a_targ10", group: 561, entry: 3 },
-    { name: "a_targ10_1", group: 562, entry: 3 },
+    // { name: "a_targ10_1", group: 562, entry: 3 },
     { name: "a_targ11", group: 563, entry: 3 },
-    { name: "a_targ11_1", group: 564, entry: 3 },
+    // { name: "a_targ11_1", group: 564, entry: 3 },
     { name: "a_targ12", group: 565, entry: 3 },
-    { name: "a_targ12_1", group: 566, entry: 3 },
+    // { name: "a_targ12_1", group: 566, entry: 3 },
     { name: "a_targ13", group: 567, entry: 3 },
-    { name: "a_targ13_1", group: 568, entry: 3 },
+    // { name: "a_targ13_1", group: 568, entry: 3 },
     { name: "a_targ14", group: 569, entry: 3 },
-    { name: "a_targ14_1", group: 570, entry: 3 },
+    // { name: "a_targ14_1", group: 570, entry: 3 },
     { name: "a_targ15", group: 571, entry: 3 },
-    { name: "a_targ15_1", group: 572, entry: 3 },
+    // { name: "a_targ15_1", group: 572, entry: 3 },
     { name: "a_targ16", group: 573, entry: 3 },
-    { name: "a_targ16_1", group: 574, entry: 3 },
+    // { name: "a_targ16_1", group: 574, entry: 3 },
     { name: "a_targ17", group: 575, entry: 3 },
-    { name: "a_targ17_1", group: 576, entry: 3 },
+    // { name: "a_targ17_1", group: 576, entry: 3 },
     { name: "a_targ18", group: 577, entry: 3 },
-    { name: "a_targ18_1", group: 578, entry: 3 },
+    // { name: "a_targ18_1", group: 578, entry: 3 },
     { name: "a_targ19", group: 579, entry: 3 },
-    { name: "a_targ19_1", group: 580, entry: 3 },
+    // { name: "a_targ19_1", group: 580, entry: 3 },
     { name: "a_targ20", group: 581, entry: 3 },
-    { name: "a_targ20_1", group: 582, entry: 3 },
+    // { name: "a_targ20_1", group: 582, entry: 3 },
     { name: "a_targ21", group: 583, entry: 3 },
-    { name: "a_targ21_1", group: 584, entry: 3 },
+    // { name: "a_targ21_1", group: 584, entry: 3 },
     { name: "a_targ22", group: 585, entry: 3 },
-    { name: "a_targ22_1", group: 586, entry: 3 },
+    // { name: "a_targ22_1", group: 586, entry: 3 },
     { name: "v_rebo1", group: 588, entry: 3 },
     { name: "v_rebo2", group: 589, entry: 3 },
     { name: "v_rebo3", group: 590, entry: 3 },
     { name: "v_rebo4", group: 591, entry: 3 },
     { name: "plunger", group: 592, entry: 3 },
-    { name: "plunger_1", group: 593, entry: 3 },
-    { name: "plunger_2", group: 594, entry: 3 },
-    { name: "plunger_3", group: 595, entry: 3 },
-    { name: "plunger_4", group: 596, entry: 3 },
-    { name: "plunger_5", group: 597, entry: 3 },
-    { name: "plunger_6", group: 598, entry: 3 },
-    { name: "plunger_7", group: 599, entry: 3 },
+    // { name: "plunger_1", group: 593, entry: 3 },
+    // { name: "plunger_2", group: 594, entry: 3 },
+    // { name: "plunger_3", group: 595, entry: 3 },
+    // { name: "plunger_4", group: 596, entry: 3 },
+    // { name: "plunger_5", group: 597, entry: 3 },
+    // { name: "plunger_6", group: 598, entry: 3 },
+    // { name: "plunger_7", group: 599, entry: 3 },
     { name: "a_flag1", group: 600, entry: 3 },
-    { name: "a_flag1_1", group: 601, entry: 3 },
-    { name: "a_flag1_2", group: 602, entry: 3 },
-    { name: "a_flag1_3", group: 603, entry: 3 },
-    { name: "a_flag1_4", group: 604, entry: 3 },
-    { name: "a_flag1_5", group: 605, entry: 3 },
-    { name: "a_flag1_6", group: 606, entry: 3 },
-    { name: "a_flag1_7", group: 607, entry: 3 },
+    // { name: "a_flag1_1", group: 601, entry: 3 },
+    // { name: "a_flag1_2", group: 602, entry: 3 },
+    // { name: "a_flag1_3", group: 603, entry: 3 },
+    // { name: "a_flag1_4", group: 604, entry: 3 },
+    // { name: "a_flag1_5", group: 605, entry: 3 },
+    // { name: "a_flag1_6", group: 606, entry: 3 },
+    // { name: "a_flag1_7", group: 607, entry: 3 },
     { name: "a_flag2", group: 608, entry: 3 },
-    { name: "a_flag2_1", group: 609, entry: 3 },
-    { name: "a_flag2_2", group: 610, entry: 3 },
-    { name: "a_flag2_3", group: 611, entry: 3 },
-    { name: "a_flag2_4", group: 612, entry: 3 },
-    { name: "a_flag2_5", group: 613, entry: 3 },
-    { name: "a_flag2_6", group: 614, entry: 3 },
-    { name: "a_flag2_7", group: 615, entry: 3 },
+    // { name: "a_flag2_1", group: 609, entry: 3 },
+    // { name: "a_flag2_2", group: 610, entry: 3 },
+    // { name: "a_flag2_3", group: 611, entry: 3 },
+    // { name: "a_flag2_4", group: 612, entry: 3 },
+    // { name: "a_flag2_5", group: 613, entry: 3 },
+    // { name: "a_flag2_6", group: 614, entry: 3 },
+    // { name: "a_flag2_7", group: 615, entry: 3 },
     { name: "v_bloc1", group: 617, entry: 3 },
     { name: "v_gate1", group: 618, entry: 3 },
     { name: "v_gate2", group: 619, entry: 3 },
     { name: "a_kick1", group: 622, entry: 3 },
-    { name: "a_kick1_1", group: 623, entry: 3 },
+    // { name: "a_kick1_1", group: 623, entry: 3 },
     { name: "a_kick2", group: 624, entry: 3 },
-    { name: "a_kick2_1", group: 625, entry: 3 },
+    // { name: "a_kick2_1", group: 625, entry: 3 },
     { name: "a_roll1", group: 637, entry: 3 },
     { name: "a_roll2", group: 638, entry: 3 },
     { name: "a_roll3", group: 639, entry: 3 },
