@@ -4,3 +4,6 @@
 /.parcel-cache
 /yarn.lock
 /dist/
+/.yarn
+.pnp.cjs
+.pnp.loader.mjs
