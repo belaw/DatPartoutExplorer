@@ -5,6 +5,13 @@ I started this project in June 2015. I used this [REWiki article](https://web.ar
 
 You can get Full Tilt Pinball on My Abandonware: https://www.myabandonware.com/game/full-tilt-pinball-a3m
 
+## 3D model reconstruction
+
+- .dae export (can be imported into blender etc.)
+- Automatic mesh + UV map generation from the point cloud
+
+https://user-images.githubusercontent.com/5871005/202822184-9508f931-43a9-478e-899f-e60a958f8188.mp4
+
 ## Screenshots
 
 ![image](https://user-images.githubusercontent.com/5871005/202816248-3c438e6e-5139-4856-bf4b-b45593f25eb5.png)
