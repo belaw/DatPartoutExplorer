@@ -1,9 +1,0 @@
-﻿/.idea
-/node_modules
-/.cache
-/.parcel-cache
-/yarn.lock
-/dist/
-/.yarn
-.pnp.cjs
-.pnp.loader.mjs
