@@ -11,9 +11,11 @@
     "three": "^0.130.1"
   },
   "devDependencies": {
-    "buffer": "^6.0.3",
+    "buffer": "^5.5.0",
     "gh-pages": "^3.0.0",
-    "parcel": "^2.5.0"
+    "parcel": "^2.8.0",
+    "process": "^0.11.10",
+    "typescript": "^4.6.4"
   },
   "scripts": {
     "start": "parcel src/index.html",
